@@ -1,0 +1,46 @@
+[versions]
+android-gradle-plugin = "8.3.0"
+google-gms-google-services = "4.4.2"
+firebase-bom = "33.13.0"
+appcompat = "1.7.0"
+# material = "1.12.0"  // Remove this line
+activity = "1.9.3"
+constraintlayout = "2.2.1"
+junit = "4.13.2"
+ext-junit = "1.2.1"
+espresso-core = "3.6.1"
+card-stack-view = "2.3.4"
+core-ktx = "1.16.0"
+glide = "4.16.0"
+firebase-auth = "23.2.0"
+coroutines-android = "1.9.0"
+kotlin = "2.0.20"
+cardview = "1.0.0"
+annotation = "1.8.0"
+
+[libraries]
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+# material = { group = "com.google.android.material", name = "material", version.ref = "material" }  // Remove this line
+activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "ext-junit" }
+espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso-core" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+firebase-database = { group = "com.google.firebase", name = "firebase-database" }
+firebase-storage = { group = "com.google.firebase", name = "firebase-storage" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+card-stack-view = { group = "com.github.yuyakaido", name = "cardstackview", version.ref = "card-stack-view" }
+glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
+coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines-android" }
+cloudinary-android = { group = "com.cloudinary", name = "cloudinary-android", version = "2.5.0" }
+cardview = { group = "androidx.cardview", name = "cardview", version.ref = "cardview" }
+annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }
+android-library = { id = "com.android.library", version.ref = "android-gradle-plugin" }
+google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "google-gms-google-services" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
