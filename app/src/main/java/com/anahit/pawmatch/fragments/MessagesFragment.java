@@ -136,26 +136,46 @@ public class MessagesFragment extends Fragment {
     }
 
     private void createOrFetchChatRoom(String user1Id, String user2Id, String petId) {
-        // Generate a unique chat room ID based on user IDs (sorted to ensure consistency)
         String chatRoomId = user1Id.compareTo(user2Id) < 0 ? user1Id + "_" + user2Id : user2Id + "_" + user1Id;
 
         chatRoomsRef.child(chatRoomId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (!snapshot.exists()) {
-                    // Create a new chat room
-                    ChatRoom chatRoom = new ChatRoom(user1Id, user2Id);
-                    chatRoom.setPetId(petId);
-                    chatRoomsRef.child(chatRoomId).setValue(chatRoom);
+                    petsRef.child(petId).addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot petSnapshot) {
+                            Pet pet = petSnapshot.getValue(Pet.class);
+                            if (pet != null) {
+                                String petName = pet.getName();
+                                String petImageUrl = pet.getImageUrl();
+
+                                usersRef.child(user2Id).addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot userSnapshot) {
+                                        User user = userSnapshot.getValue(User.class);
+                                        if (user != null) {
+                                            String otherUserName = user.getName();
+
+                                            ChatRoom chatRoom = new ChatRoom(user1Id, user2Id, petId, petName, petImageUrl, otherUserName, chatRoomId, System.currentTimeMillis(), "Active");
+                                            chatRoomsRef.child(chatRoomId).setValue(chatRoom);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError error) {}
+                                });
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {}
+                    });
                 }
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                if (getContext() != null) {
-                    Toast.makeText(getContext(), "Error creating chat room: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
+            public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
@@ -172,6 +192,7 @@ public class MessagesFragment extends Fragment {
                 if (pet != null) {
                     chatRoom.setPetName(pet.getName());
                     chatRoom.setPetImageUrl(pet.getImageUrl());
+
                     // Fetch user data
                     usersRef.child(otherUserId).addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
@@ -194,6 +215,7 @@ public class MessagesFragment extends Fragment {
             public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
+
 
     @Override
     public void onDestroyView() {

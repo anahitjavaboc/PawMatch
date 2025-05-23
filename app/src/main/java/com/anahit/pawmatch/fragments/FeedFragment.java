@@ -5,10 +5,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import com.anahit.pawmatch.R;
 import com.anahit.pawmatch.adapters.PetCardAdapter;
+import com.anahit.pawmatch.models.Match;
 import com.anahit.pawmatch.models.Pet;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -32,12 +34,17 @@ public class FeedFragment extends Fragment implements CardStackListener {
     private DatabaseReference likesRef = FirebaseDatabase.getInstance().getReference("likes");
     private String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null ?
             FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+    private ValueEventListener petsListener;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_feed, container, false);
 
         cardStackView = view.findViewById(R.id.cardStackView);
+        if (cardStackView == null) {
+            Toast.makeText(requireContext(), "CardStackView not found in layout", Toast.LENGTH_SHORT).show();
+            return view;
+        }
 
         // Initialize layout manager and adapter
         CardStackLayoutManager layoutManager = new CardStackLayoutManager(requireContext(), this);
@@ -58,41 +65,50 @@ public class FeedFragment extends Fragment implements CardStackListener {
             return;
         }
 
-        petsRef.addValueEventListener(new ValueEventListener() {
+        petsListener = new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot snapshot) {
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
                 petList.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Pet pet = data.getValue(Pet.class);
                     if (pet != null && !pet.getOwnerId().equals(currentUserId)) {
+                        pet.setId(data.getKey());
                         petList.add(pet);
                     }
                 }
-                // Initialize adapter only if not already set
                 if (adapter == null) {
-                    adapter = new PetCardAdapter(petList);
+                    adapter = new PetCardAdapter(requireContext(), petList);
                     cardStackView.setAdapter(adapter);
                 } else {
-                    adapter.updateData(petList); // Assuming PetCardAdapter has an update method
+                    adapter.updateData(petList);
                     adapter.notifyDataSetChanged();
+                }
+
+                if (petList.isEmpty()) {
+                    Toast.makeText(requireContext(), "No pets available to swipe", Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
-            public void onCancelled(DatabaseError error) {
+            public void onCancelled(@NonNull DatabaseError error) {
                 if (getContext() != null) {
                     Toast.makeText(getContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
-        });
+        };
+        petsRef.addValueEventListener(petsListener);
     }
 
     @Override
     public void onCardSwiped(Direction direction) {
-        if (direction == Direction.Right && !petList.isEmpty()) {
-            // Use the top card (position 0) since we don’t have the exact position
-            Pet pet = petList.get(0);
-            if (pet != null && currentUserId != null) {
+        CardStackLayoutManager layoutManager = (CardStackLayoutManager) cardStackView.getLayoutManager();
+        int position = layoutManager.getTopPosition() - 1; // Get the swiped card position
+        if (position >= 0 && position < petList.size()) {
+            Pet pet = petList.get(position);
+            petList.remove(position);
+            adapter.notifyItemRemoved(position);
+
+            if (direction == Direction.Right && pet != null && currentUserId != null) {
                 likesRef.child(currentUserId).child(pet.getId()).child("timestamp")
                         .setValue(System.currentTimeMillis())
                         .addOnSuccessListener(aVoid -> checkForMatch(pet))
@@ -106,24 +122,35 @@ public class FeedFragment extends Fragment implements CardStackListener {
     }
 
     private void checkForMatch(Pet pet) {
-        if (pet != null && pet.getOwnerId() != null && currentUserId != null) {
+        if (pet != null && pet.getOwnerId() != null && pet.getId() != null && currentUserId != null) {
             likesRef.child(pet.getOwnerId()).child(currentUserId).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
-                public void onDataChange(DataSnapshot snapshot) {
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
                     if (snapshot.exists()) {
                         DatabaseReference matchesRef = FirebaseDatabase.getInstance().getReference("matches");
                         String matchId = matchesRef.push().getKey();
-                        matchesRef.child(matchId).child("userId1").setValue(currentUserId);
-                        matchesRef.child(matchId).child("userId2").setValue(pet.getOwnerId());
-                        matchesRef.child(matchId).child("petId").setValue(pet.getId());
-                        if (getContext() != null) {
-                            Toast.makeText(getContext(), "Match with " + pet.getName() + "!", Toast.LENGTH_SHORT).show();
+                        if (matchId != null) {
+                            Match newMatch = new Match(
+                                    matchId,
+                                    currentUserId,
+                                    pet.getOwnerId(),
+                                    pet.getId(),
+                                    pet.getName(),
+                                    null, // ownerName (fetch dynamically if needed)
+                                    pet.getImageUrl(), // petImageUrl
+                                    System.currentTimeMillis(), // timestamp
+                                    "Pending" // status
+                            );
+                            matchesRef.child(matchId).setValue(newMatch);
+                            if (getContext() != null) {
+                                Toast.makeText(getContext(), "Match with " + (pet.getName() != null ? pet.getName() : "Unknown Pet") + "!", Toast.LENGTH_SHORT).show();
+                            }
                         }
                     }
                 }
 
                 @Override
-                public void onCancelled(DatabaseError error) {
+                public void onCancelled(@NonNull DatabaseError error) {
                     if (getContext() != null) {
                         Toast.makeText(getContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                     }
@@ -133,27 +160,25 @@ public class FeedFragment extends Fragment implements CardStackListener {
     }
 
     @Override
-    public void onCardDragging(Direction direction, float ratio) {
-        // Optional: Add dragging feedback if needed
-    }
+    public void onCardDragging(Direction direction, float ratio) {}
 
     @Override
-    public void onCardRewound() {
-        // Optional: Handle card rewind if needed
-    }
+    public void onCardRewound() {}
 
     @Override
-    public void onCardCanceled() {
-        // Optional: Handle canceled swipe if needed
-    }
+    public void onCardCanceled() {}
 
     @Override
-    public void onCardAppeared(View view, int position) {
-        // Optional: Handle card appearance if needed
-    }
+    public void onCardAppeared(View view, int position) {}
 
     @Override
-    public void onCardDisappeared(View view, int position) {
-        // Optional: Handle card disappearance if needed
+    public void onCardDisappeared(View view, int position) {}
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (petsListener != null) {
+            petsRef.removeEventListener(petsListener);
+        }
     }
 }

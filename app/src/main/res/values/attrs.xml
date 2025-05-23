@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CardStackView">
+        <attr name="card_stack_can_scroll_horizontally" format="boolean"/>
+        <attr name="card_stack_can_scroll_vertically" format="boolean"/>
+    </declare-styleable>
+</resources>
