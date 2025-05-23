@@ -8,8 +8,8 @@ public class ChatRoom {
     private String petImageUrl;
     private String otherUserName;
     private String id;
-    private long timestamp; // New field for last message timestamp
-    private String status;  // New field for chat room status
+    private long timestamp;
+    private String status;
 
     public ChatRoom() {}
 

@@ -45,11 +45,11 @@ public class MatchesAdapter extends RecyclerView.Adapter<MatchesAdapter.MatchVie
         if (match.getPetImageUrl() != null && !match.getPetImageUrl().isEmpty()) {
             Glide.with(holder.itemView.getContext())
                     .load(match.getPetImageUrl())
-                    .placeholder(R.drawable.ic_pet_placeholder)
-                    .error(R.drawable.ic_pet_placeholder)
+                    .placeholder(R.drawable.pawmatchlogo)
+                    .error(R.drawable.pawmatchlogo)
                     .into(holder.petImageView);
         } else {
-            holder.petImageView.setImageResource(R.drawable.ic_pet_placeholder);
+            holder.petImageView.setImageResource(R.drawable.pawmatchlogo);
         }
 
         // Bind text fields

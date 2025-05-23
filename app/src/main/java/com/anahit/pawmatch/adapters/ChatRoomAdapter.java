@@ -45,11 +45,11 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
         if (chatRoom.getPetImageUrl() != null && !chatRoom.getPetImageUrl().isEmpty()) {
             Glide.with(holder.itemView.getContext())
                     .load(chatRoom.getPetImageUrl())
-                    .placeholder(R.drawable.ic_pet_placeholder)
-                    .error(R.drawable.ic_pet_placeholder)
+                    .placeholder(R.drawable.pawmatchlogo)
+                    .error(R.drawable.pawmatchlogo)
                     .into(holder.petImageView);
         } else {
-            holder.petImageView.setImageResource(R.drawable.ic_pet_placeholder);
+            holder.petImageView.setImageResource(R.drawable.pawmatchlogo);
         }
 
         // Bind text fields

@@ -1,22 +1,23 @@
 package com.anahit.pawmatch.models;
 
 public class Match {
-    private String matchId;
-    private String userId1;
-    private String userId2;
+    private String id;
+    private String user1;
+    private String user2;
     private String petId;
     private String petName;
     private String ownerName;
     private String petImageUrl;
-    private long timestamp; // New field for match timestamp
-    private String status;  // New field for match status
+    private long timestamp;
+    private String status;
 
     public Match() {}
 
-    public Match(String matchId, String userId1, String userId2, String petId, String petName, String ownerName, String petImageUrl, long timestamp, String status) {
-        this.matchId = matchId;
-        this.userId1 = userId1;
-        this.userId2 = userId2;
+    public Match(String id, String user1, String user2, String petId, String petName, String ownerName,
+                 String petImageUrl, long timestamp, String status) {
+        this.id = id;
+        this.user1 = user1;
+        this.user2 = user2;
         this.petId = petId;
         this.petName = petName;
         this.ownerName = ownerName;
@@ -26,20 +27,20 @@ public class Match {
     }
 
     // Getters and setters
-    public String getMatchId() { return matchId; }
-    public void setMatchId(String matchId) { this.matchId = matchId; }
-    public String getUserId1() { return userId1; }
-    public void setUserId1(String userId1) { this.userId1 = userId1; }
-    public String getUserId2() { return userId2; }
-    public void setUserId2(String userId2) { this.userId2 = userId2; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+    public String getUser1() { return user1; }
+    public void setUser1(String user1) { this.user1 = user1; }
+    public String getUser2() { return user2; }
+    public void setUser2(String user2) { this.user2 = user2; }
     public String getPetId() { return petId; }
     public void setPetId(String petId) { this.petId = petId; }
     public String getPetName() { return petName; }
     public void setPetName(String petName) { this.petName = petName; }
     public String getOwnerName() { return ownerName; }
-    public void setOwnerName(String ownerName) { this.ownerName = ownerName; } // Added setter
+    public void setOwnerName(String ownerName) { this.ownerName = ownerName; }
     public String getPetImageUrl() { return petImageUrl; }
-    public void setPetImageUrl(String petImageUrl) { this.petImageUrl = petImageUrl; } // Added setter
+    public void setPetImageUrl(String petImageUrl) { this.petImageUrl = petImageUrl; }
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
     public String getStatus() { return status; }

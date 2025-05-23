@@ -5,10 +5,26 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#FFFFFF">
+
     <TextView
+        android:id="@+id/matchesLabel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Matches Fragment"
+        android:text="Matches"
         android:textSize="20sp"
-        android:gravity="center" />
+        android:gravity="center"
+        android:padding="16dp"
+        android:textStyle="bold" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/matchesRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp"
+        android:clipToPadding="false"
+        android:labelFor="@id/matchesLabel"
+        android:contentDescription="List of matched profiles" />
+
+
 </LinearLayout>

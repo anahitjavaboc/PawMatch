@@ -66,9 +66,6 @@ public class OwnerProfileCreationActivity extends AppCompatActivity {
         // Check if user is authenticated
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
             Toast.makeText(this, "User not authenticated. Please log in.", Toast.LENGTH_LONG).show();
-            // Optionally, redirect to a login activity
-            // Intent intent = new Intent(this, LoginActivity.class);
-            // startActivity(intent);
             finish();
             return;
         }

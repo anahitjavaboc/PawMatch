@@ -8,7 +8,7 @@ public class Pet {
     private String healthStatus;
     private String age;
     private String breed;
-    private String bio; // New field
+    private String bio;
 
     public Pet() {}
 
@@ -31,19 +31,18 @@ public class Pet {
         this.healthStatus = "Unknown";
         this.age = "Unknown";
         this.breed = breed;
-        this.bio = "No bio available"; // Default value
+        this.bio = "No bio available";
     }
 
-    // New constructor with int age
     public Pet(String name, int age, String ownerId, String imageUrl) {
         this.id = null;
         this.name = name;
         this.ownerId = ownerId;
         this.imageUrl = imageUrl;
         this.healthStatus = "Unknown";
-        this.age = String.valueOf(age); // Convert int to String
-        this.breed = null; // Set to null or a default value if not provided
-        this.bio = "No bio available"; // Default value
+        this.age = String.valueOf(age);
+        this.breed = null;
+        this.bio = "No bio available";
     }
 
     // Getters and setters

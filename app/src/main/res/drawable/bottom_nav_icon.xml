@@ -3,7 +3,7 @@
     <!-- Selected state -->
     <item android:state_selected="true">
         <shape>
-            <solid android:color="#FF5722" /> <!-- Match toolbar color for selected state -->
+            <solid android:color="#FF5722" /> <!-- Match toolbar color -->
             <corners android:radius="8dp" />
         </shape>
     </item>

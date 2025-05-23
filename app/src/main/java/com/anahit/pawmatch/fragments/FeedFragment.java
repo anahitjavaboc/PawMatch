@@ -1,13 +1,13 @@
 package com.anahit.pawmatch.fragments;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-
 import com.anahit.pawmatch.R;
 import com.anahit.pawmatch.adapters.PetCardAdapter;
 import com.anahit.pawmatch.models.Match;
@@ -22,18 +22,19 @@ import com.yuyakaido.android.cardstackview.CardStackLayoutManager;
 import com.yuyakaido.android.cardstackview.CardStackListener;
 import com.yuyakaido.android.cardstackview.CardStackView;
 import com.yuyakaido.android.cardstackview.Direction;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class FeedFragment extends Fragment implements CardStackListener {
+
+    private static final String TAG = "FeedFragment";
     private CardStackView cardStackView;
     private PetCardAdapter adapter;
     private List<Pet> petList = new ArrayList<>();
     private DatabaseReference petsRef = FirebaseDatabase.getInstance().getReference("pets");
     private DatabaseReference likesRef = FirebaseDatabase.getInstance().getReference("likes");
-    private String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null ?
-            FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+    private DatabaseReference matchesRef = FirebaseDatabase.getInstance().getReference("matches");
+    private String currentUserId;
     private ValueEventListener petsListener;
 
     @Override
@@ -46,26 +47,31 @@ public class FeedFragment extends Fragment implements CardStackListener {
             return view;
         }
 
-        // Initialize layout manager and adapter
+        // Initialize current user
+        currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : null;
+        if (currentUserId == null) {
+            Toast.makeText(requireContext(), "User not authenticated", Toast.LENGTH_SHORT).show();
+            return view;
+        }
+
+        // Initialize CardStackView
         CardStackLayoutManager layoutManager = new CardStackLayoutManager(requireContext(), this);
-        layoutManager.setDirections(Direction.HORIZONTAL);
+        layoutManager.setDirections(Direction.HORIZONTAL); // Allow left and right swipes
+        layoutManager.setSwipeThreshold(0.3f); // Adjust swipe sensitivity
+        layoutManager.setMaxDegree(20.0f); // Slight rotation for aesthetic
+        layoutManager.setTranslationInterval(8.0f); // Smooth movement
         cardStackView.setLayoutManager(layoutManager);
 
-        // Set adapter after initial data load to avoid empty view
+        // Load pets and set adapter
         loadPets();
 
         return view;
     }
 
     private void loadPets() {
-        if (currentUserId == null) {
-            if (getContext() != null) {
-                Toast.makeText(getContext(), "User not authenticated", Toast.LENGTH_SHORT).show();
-            }
-            return;
-        }
-
-        petsListener = new ValueEventListener() {
+        petsListener = petsRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 petList.clear();
@@ -76,103 +82,124 @@ public class FeedFragment extends Fragment implements CardStackListener {
                         petList.add(pet);
                     }
                 }
-                if (adapter == null) {
-                    adapter = new PetCardAdapter(requireContext(), petList);
-                    cardStackView.setAdapter(adapter);
+                if (!petList.isEmpty()) {
+                    if (adapter == null) {
+                        adapter = new PetCardAdapter(requireContext(), petList);
+                        cardStackView.setAdapter(adapter);
+                    } else {
+                        adapter.updateData(petList);
+                        adapter.notifyDataSetChanged();
+                    }
                 } else {
-                    adapter.updateData(petList);
-                    adapter.notifyDataSetChanged();
-                }
-
-                if (petList.isEmpty()) {
                     Toast.makeText(requireContext(), "No pets available to swipe", Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                if (getContext() != null) {
-                    Toast.makeText(getContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+                Log.e(TAG, "Failed to load pets: " + error.getMessage());
+                Toast.makeText(requireContext(), "Error loading pets: " + error.getMessage(), Toast.LENGTH_SHORT).show();
             }
-        };
-        petsRef.addValueEventListener(petsListener);
+        });
     }
 
     @Override
     public void onCardSwiped(Direction direction) {
-        CardStackLayoutManager layoutManager = (CardStackLayoutManager) cardStackView.getLayoutManager();
-        int position = layoutManager.getTopPosition() - 1; // Get the swiped card position
-        if (position >= 0 && position < petList.size()) {
-            Pet pet = petList.get(position);
-            petList.remove(position);
-            adapter.notifyItemRemoved(position);
+        if (adapter == null || petList.isEmpty()) return;
 
-            if (direction == Direction.Right && pet != null && currentUserId != null) {
-                likesRef.child(currentUserId).child(pet.getId()).child("timestamp")
-                        .setValue(System.currentTimeMillis())
-                        .addOnSuccessListener(aVoid -> checkForMatch(pet))
-                        .addOnFailureListener(e -> {
-                            if (getContext() != null) {
-                                Toast.makeText(getContext(), "Failed to like: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        });
-            }
+        int position = ((CardStackLayoutManager) cardStackView.getLayoutManager()).getTopPosition() - 1;
+        if (position < 0 || position >= petList.size()) return;
+
+        Pet pet = petList.get(position);
+        petList.remove(position);
+
+        if (direction == Direction.Right) {
+            handleLike(pet);
+        } else if (direction == Direction.Left) {
+            Toast.makeText(requireContext(), "Skipped " + (pet.getName() != null ? pet.getName() : "pet"), Toast.LENGTH_SHORT).show();
         }
+
+        adapter.notifyDataSetChanged(); // Refresh the card stack
+    }
+
+    private void handleLike(Pet pet) {
+        if (pet == null || pet.getId() == null || currentUserId == null) return;
+
+        likesRef.child(currentUserId).child(pet.getId()).child("timestamp")
+                .setValue(System.currentTimeMillis())
+                .addOnSuccessListener(aVoid -> checkForMatch(pet))
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Failed to like: " + e.getMessage());
+                    Toast.makeText(requireContext(), "Failed to like", Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void checkForMatch(Pet pet) {
-        if (pet != null && pet.getOwnerId() != null && pet.getId() != null && currentUserId != null) {
-            likesRef.child(pet.getOwnerId()).child(currentUserId).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
-                        DatabaseReference matchesRef = FirebaseDatabase.getInstance().getReference("matches");
-                        String matchId = matchesRef.push().getKey();
-                        if (matchId != null) {
-                            Match newMatch = new Match(
-                                    matchId,
-                                    currentUserId,
-                                    pet.getOwnerId(),
-                                    pet.getId(),
-                                    pet.getName(),
-                                    null, // ownerName (fetch dynamically if needed)
-                                    pet.getImageUrl(), // petImageUrl
-                                    System.currentTimeMillis(), // timestamp
-                                    "Pending" // status
-                            );
-                            matchesRef.child(matchId).setValue(newMatch);
-                            if (getContext() != null) {
-                                Toast.makeText(getContext(), "Match with " + (pet.getName() != null ? pet.getName() : "Unknown Pet") + "!", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    }
-                }
+        if (pet == null || pet.getOwnerId() == null || pet.getId() == null) return;
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    if (getContext() != null) {
-                        Toast.makeText(getContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+        likesRef.child(pet.getOwnerId()).child(currentUserId).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String matchId = matchesRef.push().getKey();
+                    if (matchId != null) {
+                        Match match = new Match(
+                                matchId,
+                                currentUserId,
+                                pet.getOwnerId(),
+                                pet.getId(),
+                                pet.getName(),
+                                null, // ownerName (fetch dynamically if needed)
+                                pet.getImageUrl(),
+                                System.currentTimeMillis(),
+                                "Pending"
+                        );
+                        matchesRef.child(matchId).setValue(match)
+                                .addOnSuccessListener(aVoid -> {
+                                    Toast.makeText(requireContext(), "Match with " + (pet.getName() != null ? pet.getName() : "Unknown Pet") + "!", Toast.LENGTH_LONG).show();
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e(TAG, "Failed to create match: " + e.getMessage());
+                                    Toast.makeText(requireContext(), "Failed to create match", Toast.LENGTH_SHORT).show();
+                                });
                     }
+                } else {
+                    Toast.makeText(requireContext(), "Liked " + (pet.getName() != null ? pet.getName() : "pet") + "!", Toast.LENGTH_SHORT).show();
                 }
-            });
-        }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Match check failed: " + error.getMessage());
+                Toast.makeText(requireContext(), "Error checking match", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
-    public void onCardDragging(Direction direction, float ratio) {}
+    public void onCardDragging(Direction direction, float ratio) {
+        // Optional: Add animation or feedback during drag
+    }
 
     @Override
-    public void onCardRewound() {}
+    public void onCardRewound() {
+        // Not implemented (rewind feature optional)
+    }
 
     @Override
-    public void onCardCanceled() {}
+    public void onCardCanceled() {
+        // Not implemented (cancel swipe optional)
+    }
 
     @Override
-    public void onCardAppeared(View view, int position) {}
+    public void onCardAppeared(View view, int position) {
+        // Not implemented (card appearance optional)
+    }
 
     @Override
-    public void onCardDisappeared(View view, int position) {}
+    public void onCardDisappeared(View view, int position) {
+        // Not implemented (card disappearance optional)
+    }
 
     @Override
     public void onDestroyView() {

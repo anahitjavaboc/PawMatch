@@ -1,7 +1,9 @@
 package com.anahit.pawmatch;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,7 +14,10 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.anahit.pawmatch.models.Pet;
 import com.bumptech.glide.Glide;
@@ -77,6 +82,11 @@ public class PetProfileCreationActivity extends AppCompatActivity {
             Log.w(TAG, "Owner ID from intent (" + intentOwnerId + ") does not match authenticated user (" + ownerId + ")");
         }
 
+        // Request storage permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 100);
+        }
+
         // Initialize views
         petImageView = findViewById(R.id.petImageView);
         uploadImageButton = findViewById(R.id.uploadImageButton);
@@ -87,10 +97,28 @@ public class PetProfileCreationActivity extends AppCompatActivity {
         petBioEditText = findViewById(R.id.petBioEditText);
 
         // Handle image upload
-        uploadImageButton.setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
+        uploadImageButton.setOnClickListener(v -> {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                imagePickerLauncher.launch("image/*");
+            } else {
+                Toast.makeText(this, "Storage permission required to upload images", Toast.LENGTH_LONG).show();
+            }
+        });
 
         // Handle save and continue
         saveProfileButton.setOnClickListener(v -> savePetProfile());
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 100) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Storage permission granted");
+            } else {
+                Toast.makeText(this, "Storage permission required to upload images", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void savePetProfile() {
@@ -165,11 +193,11 @@ public class PetProfileCreationActivity extends AppCompatActivity {
     }
 
     private void savePetToFirebase(String petId, String petName, int petAge, String petBreed, String petBio) {
-        // Use Pet model for consistency with previous implementation
-        Pet pet = new Pet(petName, petAge, petBreed, ownerId);
+        Pet pet = new Pet(petName, petAge, ownerId, imageUrl);
         pet.setId(petId);
+        pet.setBreed(petBreed);
         pet.setBio(petBio);
-        pet.setImageUrl(imageUrl);
+        pet.setHealthStatus("Unknown");
 
         // Save pet under owner's node and global pets node
         databaseReference.child("users").child(ownerId).child("pets").child(petId).setValue(petId)
@@ -178,7 +206,7 @@ public class PetProfileCreationActivity extends AppCompatActivity {
                             .addOnSuccessListener(aVoid2 -> {
                                 Log.d(TAG, "Pet profile saved to Firebase successfully");
                                 Toast.makeText(this, "Pet profile saved!", Toast.LENGTH_SHORT).show();
-                                // Navigate to MainActivity and clear back stack
+                                // Navigate to MainActivity
                                 Intent intent = new Intent(PetProfileCreationActivity.this, MainActivity.class);
                                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intent);

@@ -29,8 +29,7 @@
             <TabWidget
                 android:id="@android:id/tabs"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="#DDDDDD"/>
+                android:layout_height="wrap_content" />
 
             <FrameLayout
                 android:id="@android:id/tabcontent"
@@ -58,49 +57,40 @@
         android:padding="12dp"
         android:gravity="center">
 
-        <Button
+        <ImageButton
             android:id="@+id/feed_button"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
-            android:text="Feed"
-            android:background="@drawable/bottom_nav_button"
-            android:textColor="#FFFFFF" />
+            android:src="@drawable/ic_feed"
+            android:contentDescription="Feed"
+            android:scaleType="fitCenter" />
 
-        <Button
-            android:id="@+id/explore_button"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:text="Explore"
-            android:background="@drawable/bottom_nav_button"
-            android:textColor="#FFFFFF" />
-
-        <Button
+        <ImageButton
             android:id="@+id/matches_button"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
-            android:text="Matches"
-            android:background="@drawable/bottom_nav_button"
-            android:textColor="#FFFFFF" />
+            android:src="@drawable/ic_matches"
+            android:contentDescription="Matches"
+            android:scaleType="fitCenter" />
 
-        <Button
+        <ImageButton
             android:id="@+id/health_button"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
-            android:text="Health"
-            android:background="@drawable/bottom_nav_button"
-            android:textColor="#FFFFFF" />
+            android:src="@drawable/ic_health"
+            android:contentDescription="Health"
+            android:scaleType="fitCenter" />
 
-        <Button
+        <ImageButton
             android:id="@+id/profile_button"
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
-            android:text="Profile"
-            android:background="@drawable/bottom_nav_button"
-            android:textColor="#FFFFFF" />
+            android:src="@drawable/ic_profile"
+            android:contentDescription="Profile"
+            android:scaleType="fitCenter" />
     </LinearLayout>
 </LinearLayout>
