@@ -28,12 +28,11 @@
                 android:layout_width="200dp"
                 android:layout_height="200dp"
                 android:contentDescription="@string/pet_profile_image_description"
-                android:src="@drawable/pawmatchlogo"
                 android:scaleType="centerCrop"
                 android:background="@android:color/darker_gray"
                 android:layout_marginBottom="16dp" />
 
-            <!-- Placeholder for Loading Indicator (Hidden by default) -->
+            <!-- Placeholder for Loading Indicator -->
             <ProgressBar
                 android:id="@+id/loadingIndicator"
                 android:layout_width="wrap_content"

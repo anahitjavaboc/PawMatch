@@ -1,21 +1,21 @@
 package com.anahit.pawmatch;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-
+import com.anahit.pawmatch.BuildConfig; // Corrected import
 import com.bumptech.glide.Glide;
 import com.cloudinary.android.MediaManager;
 import com.cloudinary.android.callback.ErrorInfo;
@@ -23,9 +23,10 @@ import com.cloudinary.android.callback.UploadCallback;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class OwnerProfileCreationActivity extends AppCompatActivity {
     private static final String TAG = "OwnerProfileCreation";
@@ -36,6 +37,8 @@ public class OwnerProfileCreationActivity extends AppCompatActivity {
     private Uri filePath;
     private String imageUrl;
     private DatabaseReference databaseReference;
+    private ExecutorService executorService;
+    private Handler mainHandler;
 
     private final ActivityResultLauncher<String> imagePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -47,25 +50,20 @@ public class OwnerProfileCreationActivity extends AppCompatActivity {
             }
     );
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_owner_profile_creation);
 
-        // Initialize Cloudinary using BuildConfig
-        Map<String, Object> config = new HashMap<>();
-        config.put("cloud_name", BuildConfig.CLOUDINARY_CLOUD_NAME);
-        config.put("api_key", BuildConfig.CLOUDINARY_API_KEY);
-        config.put("api_secret", BuildConfig.CLOUDINARY_API_SECRET);
-        MediaManager.init(this, config);
-
         // Initialize Firebase Database
         databaseReference = FirebaseDatabase.getInstance().getReference();
+        executorService = Executors.newSingleThreadExecutor();
+        mainHandler = new Handler(Looper.getMainLooper());
 
         // Check if user is authenticated
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
             Toast.makeText(this, "User not authenticated. Please log in.", Toast.LENGTH_LONG).show();
+            startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
@@ -96,10 +94,8 @@ public class OwnerProfileCreationActivity extends AppCompatActivity {
         String ageStr = ownerAgeEditText.getText().toString().trim();
         String gender = ownerGenderSpinner.getSelectedItem().toString();
 
-        // Validate inputs
         if (name.isEmpty() || ageStr.isEmpty() || gender.equals("Select Gender")) {
             Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "Validation failed: Empty fields or invalid gender selection");
             return;
         }
 
@@ -108,57 +104,53 @@ public class OwnerProfileCreationActivity extends AppCompatActivity {
             age = Integer.parseInt(ageStr);
         } catch (NumberFormatException e) {
             Toast.makeText(this, "Enter a valid age", Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "Invalid age format: " + e.getMessage());
             return;
         }
 
-        // Use Firebase Auth user ID as ownerId
         String ownerId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        // If an image is selected, upload to Cloudinary
         if (filePath != null) {
-            Toast.makeText(this, "Uploading owner profile...", Toast.LENGTH_SHORT).show();
-            MediaManager.get().upload(filePath)
-                    .unsigned("3-pawmatch")
-                    .option("public_id", "owners/" + ownerId)
-                    .callback(new UploadCallback() {
-                        @Override
-                        public void onStart(String requestId) {
-                            Log.d(TAG, "Upload started for requestId: " + requestId);
-                        }
+            showLoading(true);
+            executorService.execute(() -> {
+                MediaManager.get().upload(filePath)
+                        .unsigned("3-pawmatch")
+                        .option("public_id", "owners/" + ownerId)
+                        .callback(new UploadCallback() {
+                            @Override
+                            public void onStart(String requestId) {}
 
-                        @Override
-                        public void onSuccess(String requestId, Map resultData) {
-                            imageUrl = resultData.get("url").toString();
-                            Log.d(TAG, "Owner profile image uploaded successfully: " + imageUrl);
-                            saveOwnerToFirebase(ownerId, name, age, gender);
-                        }
+                            @Override
+                            public void onSuccess(String requestId, Map resultData) {
+                                imageUrl = resultData.get("url").toString();
+                                mainHandler.post(() -> {
+                                    showLoading(false);
+                                    saveOwnerToFirebase(ownerId, name, age, gender);
+                                });
+                            }
 
-                        @Override
-                        public void onError(String requestId, ErrorInfo error) {
-                            Log.e(TAG, "Upload failed: " + error.getDescription());
-                            Toast.makeText(OwnerProfileCreationActivity.this, "Upload failed: " + error.getDescription(), Toast.LENGTH_LONG).show();
-                        }
+                            @Override
+                            public void onError(String requestId, ErrorInfo error) {
+                                mainHandler.post(() -> {
+                                    showLoading(false);
+                                    Toast.makeText(OwnerProfileCreationActivity.this, "Upload failed: " + error.getDescription(), Toast.LENGTH_LONG).show();
+                                });
+                            }
 
-                        @Override
-                        public void onProgress(String requestId, long bytes, long totalBytes) {
-                            float progress = (bytes / (float) totalBytes) * 100;
-                            Log.d(TAG, "Upload progress: " + progress + "%");
-                        }
+                            @Override
+                            public void onProgress(String requestId, long bytes, long totalBytes) {}
 
-                        @Override
-                        public void onReschedule(String requestId, ErrorInfo error) {
-                            Log.w(TAG, "Upload rescheduled: " + error.getDescription());
-                        }
-                    })
-                    .dispatch();
+                            @Override
+                            public void onReschedule(String requestId, ErrorInfo error) {}
+                        })
+                        .dispatch();
+            });
         } else {
-            // No image selected, proceed without image URL
             saveOwnerToFirebase(ownerId, name, age, gender);
         }
     }
 
     private void saveOwnerToFirebase(String ownerId, String name, int age, String gender) {
+        showLoading(true);
         Map<String, Object> ownerData = new HashMap<>();
         ownerData.put("name", name);
         ownerData.put("age", age);
@@ -167,19 +159,33 @@ public class OwnerProfileCreationActivity extends AppCompatActivity {
             ownerData.put("imageUrl", imageUrl);
         }
 
-        databaseReference.child("users").child(ownerId).setValue(ownerData)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "Owner profile saved to Firebase successfully");
-                    Toast.makeText(this, "Profile saved!", Toast.LENGTH_SHORT).show();
-                    // Navigate to PetProfileCreationActivity
-                    Intent intent = new Intent(OwnerProfileCreationActivity.this, PetProfileCreationActivity.class);
-                    intent.putExtra("ownerId", ownerId);
-                    startActivity(intent);
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to save owner profile to Firebase: " + e.getMessage());
-                    Toast.makeText(this, "Failed to save profile: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
+        executorService.execute(() -> {
+            databaseReference.child("users").child(ownerId).setValue(ownerData)
+                    .addOnSuccessListener(aVoid -> mainHandler.post(() -> {
+                        showLoading(false);
+                        Toast.makeText(this, "Profile saved!", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(OwnerProfileCreationActivity.this, PetProfileCreationActivity.class);
+                        intent.putExtra("ownerId", ownerId);
+                        startActivity(intent);
+                        finish();
+                    }))
+                    .addOnFailureListener(e -> mainHandler.post(() -> {
+                        showLoading(false);
+                        Toast.makeText(this, "Failed to save profile: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }));
+        });
+    }
+
+    private void showLoading(boolean isLoading) {
+        findViewById(R.id.loadingIndicator).setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        saveOwnerProfileButton.setEnabled(!isLoading);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 }

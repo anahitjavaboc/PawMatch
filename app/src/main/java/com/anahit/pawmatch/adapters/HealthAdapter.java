@@ -8,15 +8,13 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.anahit.pawmatch.R;
 import com.anahit.pawmatch.models.Pet;
-
-import java.util.ArrayList;
 import java.util.List;
 
 public class HealthAdapter extends RecyclerView.Adapter<HealthAdapter.HealthViewHolder> {
     private List<Pet> petList;
 
     public HealthAdapter(List<Pet> petList) {
-        this.petList = petList != null ? petList : new ArrayList<>();
+        this.petList = petList;
     }
 
     @NonNull

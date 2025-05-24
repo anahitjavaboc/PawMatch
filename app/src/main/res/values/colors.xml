@@ -12,4 +12,6 @@
     <color name="grey">#757575</color>
     <color name="sent_message_background">#DCF8C6</color>
     <color name="received_message_background">#E0E0E0</color>
+    <color name="appBackground">#f4f0e4</color>
+    <color name="hintColor">#B0B0B0</color>
 </resources>

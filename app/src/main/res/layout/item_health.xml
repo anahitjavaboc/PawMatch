@@ -17,7 +17,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
-        android:background="@android:color/white">
+        android:background="@color/appBackground">
 
         <TextView
             android:id="@+id/petNameTextView"
@@ -26,7 +26,7 @@
             android:text="Pet Name"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="#FF6F61"
+            android:textColor="@color/splash_background"
             android:paddingBottom="4dp" />
 
         <TextView
@@ -35,7 +35,7 @@
             android:layout_height="wrap_content"
             android:text="Health: Not specified"
             android:textSize="14sp"
-            android:textColor="#424242"
+            android:textColor="@color/grey"
             android:paddingBottom="4dp" />
 
         <TextView
@@ -44,7 +44,7 @@
             android:layout_height="wrap_content"
             android:text="Age: Unknown"
             android:textSize="14sp"
-            android:textColor="#424242"
+            android:textColor="@color/grey"
             android:paddingBottom="4dp" />
 
         <TextView
@@ -53,7 +53,7 @@
             android:layout_height="wrap_content"
             android:text="Breed: Unknown"
             android:textSize="14sp"
-            android:textColor="#424242"
+            android:textColor="@color/grey"
             android:paddingBottom="4dp" />
 
         <TextView
@@ -62,6 +62,6 @@
             android:layout_height="wrap_content"
             android:text="Bio: Not specified"
             android:textSize="14sp"
-            android:textColor="#757575" />
+            android:textColor="@color/grey" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

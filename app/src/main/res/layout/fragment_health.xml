@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Pet Health Tips"
+        android:text="Pet Health Profile"
         android:textSize="20sp"
         android:textStyle="bold"
         android:padding="8dp"
@@ -18,14 +18,9 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/healthRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:contentDescription="List of pet health tips" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/health_recycler_view"
-        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:contentDescription="Additional health resources" />
+        android:padding="8dp"
+        android:contentDescription="List of pet health profiles" />
 
 </LinearLayout>

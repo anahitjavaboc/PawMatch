@@ -118,6 +118,7 @@ public class SwipeFragment extends Fragment {
             return;
         }
         String currentUserId = currentUser.getUid();
+        Log.d(TAG, "Loading pets for user: " + currentUserId);
 
         petsListener = new ValueEventListener() {
             @Override
@@ -131,6 +132,7 @@ public class SwipeFragment extends Fragment {
                     }
                 }
                 adapter.notifyDataSetChanged();
+                Log.d(TAG, "Loaded " + petList.size() + " pets");
 
                 if (petList.isEmpty()) {
                     Toast.makeText(requireContext(), "No pets available to swipe", Toast.LENGTH_LONG).show();

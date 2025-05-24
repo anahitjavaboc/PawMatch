@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:padding="24dp"
     android:gravity="center"
-    android:background="#FFFFFF">
+    android:background="@color/appBackground">
 
+    <!-- Logo -->
     <ImageView
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:src="@android:drawable/ic_menu_gallery"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:src="@drawable/pawmatchlogobw"
         android:layout_marginBottom="32dp"/>
 
+    <!-- Title -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textColor="@color/splash_background"
         android:text="Create Account"
         android:textSize="24sp"
         android:textStyle="bold"
@@ -26,25 +30,27 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="16dp"
-        android:background="@drawable/outlined_box_background"
-        android:padding="8dp">
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
 
         <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@android:drawable/ic_dialog_email"
-            android:layout_gravity="center_vertical"
-            android:layout_marginEnd="8dp"/>
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_email"
+            android:layout_marginEnd="12dp"
+            app:tint="@color/splash_background"
+            android:contentDescription="Email icon"/>
 
         <EditText
             android:id="@+id/emailEditText"
-            android:layout_width="0dp"
-            android:layout_height="49dp"
-            android:layout_weight="1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/edittext_background"
             android:hint="Email"
             android:inputType="textEmailAddress"
-            android:background="@null"/>
+            android:padding="12dp"
+            android:textSize="16sp"
+            android:textColor="#424242"/>
     </LinearLayout>
 
     <!-- Password Field -->
@@ -52,33 +58,37 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="16dp"
-        android:background="@drawable/outlined_box_background"
-        android:padding="8dp">
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
 
         <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@android:drawable/ic_lock_idle_lock"
-            android:layout_gravity="center_vertical"
-            android:layout_marginEnd="8dp"/>
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_lock"
+            android:layout_marginEnd="12dp"
+            app:tint="@color/splash_background"
+            android:contentDescription="Password icon"/>
 
         <EditText
             android:id="@+id/passwordEditText"
             android:layout_width="0dp"
-            android:layout_height="49dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@drawable/edittext_background"
             android:hint="Password"
             android:inputType="textPassword"
-            android:background="@null"/>
+            android:padding="12dp"
+            android:textSize="16sp"
+            android:textColor="#424242"/>
 
         <ImageView
-            android:id="@+id/passwordToggle"
+            android:id="@+id/togglePasswordVisibility"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@android:drawable/ic_menu_view"
-            android:layout_gravity="center_vertical"
-            android:layout_marginStart="8dp"/>
+            android:src="@drawable/ic_visibility_off"
+            android:layout_marginStart="12dp"
+            app:tint="@color/splash_background"
+            android:contentDescription="Toggle password visibility"/>
     </LinearLayout>
 
     <!-- Confirm Password Field -->
@@ -86,36 +96,40 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="24dp"
-        android:background="@drawable/outlined_box_background"
-        android:padding="8dp">
+        android:gravity="center_vertical"
+        android:layout_marginBottom="24dp">
 
         <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@android:drawable/ic_lock_idle_lock"
-            android:layout_gravity="center_vertical"
-            android:layout_marginEnd="8dp"/>
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_lock"
+            android:layout_marginEnd="12dp"
+            app:tint="@color/splash_background"
+            android:contentDescription="Confirm password icon"/>
 
         <EditText
             android:id="@+id/confirmPasswordEditText"
             android:layout_width="0dp"
-            android:layout_height="49dp"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@drawable/edittext_background"
             android:hint="Confirm Password"
             android:inputType="textPassword"
-            android:background="@null"/>
+            android:padding="12dp"
+            android:textSize="16sp"
+            android:textColor="#424242"/>
 
         <ImageView
-            android:id="@+id/confirmPasswordToggle"
+            android:id="@+id/toggleConfirmPasswordVisibility"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@android:drawable/ic_menu_view"
-            android:layout_gravity="center_vertical"
-            android:layout_marginStart="8dp"/>
+            android:src="@drawable/ic_visibility_off"
+            android:layout_marginStart="12dp"
+            app:tint="@color/splash_background"
+            android:contentDescription="Toggle confirm password visibility"/>
     </LinearLayout>
 
-    <!-- Sign Up Button -->
+    <!-- Sign-Up Button -->
     <Button
         android:id="@+id/signUpButton"
         android:layout_width="match_parent"
@@ -126,19 +140,33 @@
         android:minHeight="48dp"
         android:padding="12dp"
         android:text="Sign Up"
-        android:textColor="@color/white" />
+        android:textColor="@color/white"
+        android:textSize="16sp"/>
 
-    <!-- Back to Sign In Button -->
+    <!-- Back to Sign-In Button -->
     <Button
         android:id="@+id/backToSignInButton"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minHeight="48dp"
+        android:layout_height="48dp"
+        android:gravity="center"
         android:padding="8dp"
         android:text="Already have an account? Sign In"
+        android:textColor="@color/black"
         android:background="@null"
-        android:textColor="@color/black" />
+        android:textSize="14sp"/>
+    <Button
+        android:id="@+id/testUserButton"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:padding="8dp"
+        android:text="Login as Test User"
+        android:textColor="@color/splash_background"
+        android:background="@null"
+        android:textSize="14sp"/>
 
+    <!-- Loading Indicator -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
