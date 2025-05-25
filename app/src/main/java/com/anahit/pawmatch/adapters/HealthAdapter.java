@@ -30,7 +30,7 @@ public class HealthAdapter extends RecyclerView.Adapter<HealthAdapter.HealthView
 
         holder.petNameTextView.setText(pet.getName() != null ? pet.getName() : "Unknown Pet");
         holder.healthStatusTextView.setText("Health: " + (pet.getHealthStatus() != null ? pet.getHealthStatus() : "Not specified"));
-        holder.ageTextView.setText("Age: " + (pet.getAge() != null ? pet.getAge() : "Unknown"));
+        holder.ageTextView.setText("Age: " + (pet.getAge() > 0 ? pet.getAge() : "Unknown"));
         holder.breedTextView.setText("Breed: " + (pet.getBreed() != null ? pet.getBreed() : "Unknown"));
         holder.bioTextView.setText("Bio: " + (pet.getBio() != null ? pet.getBio() : "Not specified"));
     }

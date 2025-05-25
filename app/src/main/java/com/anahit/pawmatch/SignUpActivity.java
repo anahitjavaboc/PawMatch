@@ -2,6 +2,8 @@ package com.anahit.pawmatch;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
@@ -10,8 +12,10 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import com.anahit.pawmatch.BuildConfig;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SignUpActivity extends AppCompatActivity {
 
@@ -22,16 +26,21 @@ public class SignUpActivity extends AppCompatActivity {
     private FirebaseAuth auth;
     private boolean isPasswordVisible = false;
     private boolean isConfirmPasswordVisible = false;
+    private ExecutorService executorService;
+    private Handler mainHandler;
+    private static final long TIMEOUT_MS = 10000; // 10 seconds timeout
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_up);
 
+        // Initialize ExecutorService and Handler
+        executorService = Executors.newSingleThreadExecutor();
+        mainHandler = new Handler(Looper.getMainLooper());
+
         auth = FirebaseAuth.getInstance();
-        if (BuildConfig.DEBUG) {
-            auth.useEmulator("10.0.2.2", 9099);
-        }
+        // Using production Firebase servers (emulator removed)
 
         emailEditText = findViewById(R.id.emailEditText);
         passwordEditText = findViewById(R.id.passwordEditText);
@@ -40,10 +49,9 @@ public class SignUpActivity extends AppCompatActivity {
         toggleConfirmPasswordVisibility = findViewById(R.id.toggleConfirmPasswordVisibility);
         signUpButton = findViewById(R.id.signUpButton);
         backToSignInButton = findViewById(R.id.backToSignInButton);
-        testUserButton = findViewById(R.id.testUserButton); // Test User Button
+        testUserButton = findViewById(R.id.testUserButton);
         progressBar = findViewById(R.id.progressBar);
 
-        // Set up visibility toggles for password fields
         togglePasswordVisibility.setOnClickListener(v -> {
             isPasswordVisible = !isPasswordVisible;
             updatePasswordVisibility(passwordEditText, togglePasswordVisibility, isPasswordVisible);
@@ -60,31 +68,7 @@ public class SignUpActivity extends AppCompatActivity {
             finish();
         });
 
-        // Test Mode Login for IndividualProject2025
-        testUserButton.setOnClickListener(v -> {
-
-            String testEmail = System.getenv("TEST_EMAIL");
-            String testPassword = System.getenv("TEST_PASSWORD");
-
-
-
-            progressBar.setVisibility(View.VISIBLE);
-            testUserButton.setEnabled(false);
-
-            auth.signInWithEmailAndPassword(testEmail, testPassword)
-                    .addOnCompleteListener(task -> {
-                        progressBar.setVisibility(View.GONE);
-                        testUserButton.setEnabled(true);
-
-                        if (task.isSuccessful()) {
-                            Toast.makeText(this, "Logged in as Test User", Toast.LENGTH_LONG).show();
-                            startActivity(new Intent(SignUpActivity.this, MainActivity.class));
-                            finish();
-                        } else {
-                            Toast.makeText(this, "Test Login Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                        }
-                    });
-        });
+        testUserButton.setOnClickListener(v -> loginTestUser());
     }
 
     private void updatePasswordVisibility(EditText editText, ImageView toggleIcon, boolean isVisible) {
@@ -95,7 +79,7 @@ public class SignUpActivity extends AppCompatActivity {
             editText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
             toggleIcon.setImageResource(R.drawable.ic_visibility_off);
         }
-        editText.setSelection(editText.getText().length()); // Keeps cursor position unchanged
+        editText.setSelection(editText.getText().length());
     }
 
     private void registerUser() {
@@ -119,29 +103,99 @@ public class SignUpActivity extends AppCompatActivity {
             return;
         }
 
-        progressBar.setVisibility(View.VISIBLE);
-        signUpButton.setEnabled(false);
+        showLoading(true);
+        final Runnable timeoutRunnable = () -> {
+            showLoading(false);
+            Toast.makeText(this, "Sign-up failed: Timeout or network error", Toast.LENGTH_LONG).show();
+        };
+        mainHandler.postDelayed(timeoutRunnable, TIMEOUT_MS);
 
-        auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(task -> {
-                    progressBar.setVisibility(View.GONE);
-                    signUpButton.setEnabled(true);
-
-                    if (task.isSuccessful()) {
-                        auth.getCurrentUser().sendEmailVerification()
-                                .addOnCompleteListener(verifyTask -> {
-                                    if (verifyTask.isSuccessful()) {
-                                        Toast.makeText(this, "Verification email sent. Please check your inbox.", Toast.LENGTH_LONG).show();
-                                        auth.signOut();
-                                        startActivity(new Intent(this, LoginActivity.class));
-                                        finish();
+        executorService.execute(() -> {
+            auth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(task -> {
+                        mainHandler.removeCallbacks(timeoutRunnable); // Cancel timeout
+                        mainHandler.post(() -> {
+                            if (task.isSuccessful()) {
+                                auth.getCurrentUser().sendEmailVerification()
+                                        .addOnCompleteListener(verifyTask -> {
+                                            showLoading(false);
+                                            if (verifyTask.isSuccessful()) {
+                                                Toast.makeText(this, "Verification email sent. Please check your inbox.", Toast.LENGTH_LONG).show();
+                                                auth.signOut();
+                                                startActivity(new Intent(this, LoginActivity.class));
+                                                finish();
+                                            } else {
+                                                Toast.makeText(this, "Failed to send verification email: " + verifyTask.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                            }
+                                        });
+                            } else {
+                                showLoading(false);
+                                String errorMessage = "Sign-up failed: ";
+                                if (task.getException() != null) {
+                                    if (task.getException() instanceof FirebaseAuthException) {
+                                        String errorCode = ((FirebaseAuthException) task.getException()).getErrorCode();
+                                        if ("ERROR_EMAIL_ALREADY_IN_USE".equals(errorCode)) {
+                                            errorMessage += "Email already in use";
+                                        } else if ("ERROR_WEAK_PASSWORD".equals(errorCode)) {
+                                            errorMessage += "Password is too weak";
+                                        } else {
+                                            errorMessage += task.getException().getMessage();
+                                        }
                                     } else {
-                                        Toast.makeText(this, "Failed to send verification email: " + verifyTask.getException().getMessage(), Toast.LENGTH_LONG).show();
+                                        errorMessage += task.getException().getMessage();
                                     }
-                                });
-                    } else {
-                        Toast.makeText(this, "Sign-up failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                });
+                                } else {
+                                    errorMessage += "Unknown error";
+                                }
+                                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    });
+        });
+    }
+
+    private void loginTestUser() {
+        String testEmail = "individualproject2025@gmail.com";
+        String testPassword = "Samsung2025";
+
+        showLoading(true);
+        final Runnable timeoutRunnable = () -> {
+            showLoading(false);
+            Toast.makeText(this, "Test Login failed: Timeout or network error", Toast.LENGTH_LONG).show();
+        };
+        mainHandler.postDelayed(timeoutRunnable, TIMEOUT_MS);
+
+        executorService.execute(() -> {
+            auth.signInWithEmailAndPassword(testEmail, testPassword)
+                    .addOnCompleteListener(task -> {
+                        mainHandler.removeCallbacks(timeoutRunnable); // Cancel timeout
+                        mainHandler.post(() -> {
+                            showLoading(false);
+                            if (task.isSuccessful()) {
+                                Toast.makeText(this, "Logged in as Test User", Toast.LENGTH_LONG).show();
+                                startActivity(new Intent(this, MainActivity.class));
+                                finish();
+                            } else {
+                                String errorMessage = "Test Login failed: " + (task.getException() != null ? task.getException().getMessage() : "Unknown error");
+                                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    });
+        });
+    }
+
+    private void showLoading(boolean isLoading) {
+        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        signUpButton.setEnabled(!isLoading);
+        testUserButton.setEnabled(!isLoading);
+        backToSignInButton.setEnabled(!isLoading);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 }

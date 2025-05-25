@@ -97,7 +97,7 @@ public class ProfileFragment extends Fragment {
                     Pet pet = petSnapshot.getValue(Pet.class);
                     if (pet != null) {
                         petNameTextView.setText(pet.getName() != null ? pet.getName() : "Unknown Pet");
-                        String petInfo = (pet.getAge() != null ? pet.getAge().toString() : "Unknown") + ", " +
+                        String petInfo = (pet.getAge() > 0 ? pet.getAge() : "Unknown") + ", " +
                                 (pet.getBreed() != null ? pet.getBreed() : "Unknown");
                         petInfoTextView.setText(petInfo);
                         if (pet.getImageUrl() != null && !pet.getImageUrl().isEmpty()) {

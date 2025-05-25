@@ -12,6 +12,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -20,12 +21,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.anahit.pawmatch.models.Pet;
-import com.anahit.pawmatch.BuildConfig; // Corrected import
 import com.bumptech.glide.Glide;
 import com.cloudinary.android.MediaManager;
 import com.cloudinary.android.callback.ErrorInfo;
 import com.cloudinary.android.callback.UploadCallback;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import java.util.HashMap;
@@ -35,7 +36,6 @@ import java.util.concurrent.Executors;
 
 public class PetProfileCreationActivity extends AppCompatActivity {
     private static final String TAG = "PetProfileCreation";
-    private static boolean isMediaManagerInitialized = false; // Flag to prevent reinitialization
     private ImageView petImageView;
     private Button uploadImageButton, saveProfileButton;
     private EditText petNameEditText, petAgeEditText, petBreedEditText, petBioEditText;
@@ -61,43 +61,31 @@ public class PetProfileCreationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile_creation_pet);
 
-        // Initialize Firebase Database
         databaseReference = FirebaseDatabase.getInstance().getReference();
         executorService = Executors.newSingleThreadExecutor();
         mainHandler = new Handler(Looper.getMainLooper());
 
-        // Initialize MediaManager if not already initialized
-        if (!isMediaManagerInitialized) {
-            Map<String, Object> config = new HashMap<>();
-            config.put("cloud_name", BuildConfig.CLOUDINARY_CLOUD_NAME);
-            config.put("api_key", BuildConfig.CLOUDINARY_API_KEY);
-            config.put("api_secret", BuildConfig.CLOUDINARY_API_SECRET);
-            MediaManager.init(this, config);
-            isMediaManagerInitialized = true;
-            Log.d(TAG, "MediaManager initialized");
-        }
-
-        // Get ownerId from Firebase Authentication
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        if (auth.getCurrentUser() == null) {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            Log.e(TAG, "User not authenticated. Redirecting to login.");
             Toast.makeText(this, "Error: User not authenticated", Toast.LENGTH_SHORT).show();
+            FirebaseAuth.getInstance().signOut();
+            startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
-        ownerId = auth.getCurrentUser().getUid();
+        ownerId = currentUser.getUid();
+        Log.d(TAG, "Authenticated user UID: " + ownerId);
 
-        // Check ownerId from intent (for consistency)
         String intentOwnerId = getIntent().getStringExtra("ownerId");
         if (intentOwnerId != null && !intentOwnerId.equals(ownerId)) {
             Log.w(TAG, "Owner ID from intent (" + intentOwnerId + ") does not match authenticated user (" + ownerId + ")");
         }
 
-        // Request storage permission for Android 13+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_MEDIA_IMAGES}, 100);
         }
 
-        // Initialize views
         petImageView = findViewById(R.id.petImageView);
         uploadImageButton = findViewById(R.id.uploadImageButton);
         saveProfileButton = findViewById(R.id.saveProfileButton);
@@ -106,7 +94,6 @@ public class PetProfileCreationActivity extends AppCompatActivity {
         petBreedEditText = findViewById(R.id.petBreedEditText);
         petBioEditText = findViewById(R.id.petBioEditText);
 
-        // Handle image upload
         uploadImageButton.setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED) {
                 imagePickerLauncher.launch("image/*");
@@ -115,7 +102,6 @@ public class PetProfileCreationActivity extends AppCompatActivity {
             }
         });
 
-        // Handle save and continue
         saveProfileButton.setOnClickListener(v -> savePetProfile());
     }
 
@@ -137,7 +123,6 @@ public class PetProfileCreationActivity extends AppCompatActivity {
         String petBreed = petBreedEditText.getText().toString().trim();
         String petBio = petBioEditText.getText().toString().trim();
 
-        // Validate inputs
         if (petName.isEmpty() || petAgeStr.isEmpty() || petBreed.isEmpty() || petBio.isEmpty()) {
             Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
             Log.d(TAG, "Validation failed: Empty fields");
@@ -164,12 +149,12 @@ public class PetProfileCreationActivity extends AppCompatActivity {
             return;
         }
 
-        // Upload image to Cloudinary
         showLoading(true);
         executorService.execute(() -> {
             MediaManager.get().upload(filePath)
                     .unsigned("3-pawmatch")
                     .option("public_id", "pets/" + petId)
+                    .option("resource_type", "image")
                     .callback(new UploadCallback() {
                         @Override
                         public void onStart(String requestId) {
@@ -178,9 +163,7 @@ public class PetProfileCreationActivity extends AppCompatActivity {
 
                         @Override
                         public void onSuccess(String requestId, Map resultData) {
-                            @SuppressWarnings("unchecked")
-                            Map<String, Object> result = (Map<String, Object>) resultData;
-                            imageUrl = result.get("url").toString();
+                            imageUrl = resultData.get("secure_url").toString();
                             Log.d(TAG, "Pet profile image uploaded successfully: " + imageUrl);
                             mainHandler.post(() -> {
                                 showLoading(false);
@@ -190,6 +173,7 @@ public class PetProfileCreationActivity extends AppCompatActivity {
 
                         @Override
                         public void onError(String requestId, ErrorInfo error) {
+                            Log.e(TAG, "Upload failed: " + error.getDescription() + ", Request ID: " + requestId);
                             mainHandler.post(() -> {
                                 showLoading(false);
                                 Toast.makeText(PetProfileCreationActivity.this, "Upload failed: " + error.getDescription(), Toast.LENGTH_LONG).show();
@@ -213,29 +197,39 @@ public class PetProfileCreationActivity extends AppCompatActivity {
 
     private void savePetToFirebase(String petId, String petName, int petAge, String petBreed, String petBio) {
         showLoading(true);
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            Log.e(TAG, "User not authenticated during save. Redirecting to login.");
+            Toast.makeText(this, "Authentication error. Please log in again.", Toast.LENGTH_LONG).show();
+            FirebaseAuth.getInstance().signOut();
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         Pet pet = new Pet(petName, petAge, ownerId, imageUrl);
         pet.setId(petId);
         pet.setBreed(petBreed);
         pet.setBio(petBio);
         pet.setHealthStatus("Unknown");
 
+        // Write to pets/<petId>
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("pets/" + petId, pet);
+
+        Log.d(TAG, "Writing to database at path: pets/" + petId + ", data: " + pet.toString());
+
         executorService.execute(() -> {
-            databaseReference.child("users").child(ownerId).child("pets").child(petId).setValue(petId)
-                    .addOnSuccessListener(aVoid -> {
-                        databaseReference.child("pets").child(petId).setValue(pet)
-                                .addOnSuccessListener(aVoid2 -> mainHandler.post(() -> {
-                                    showLoading(false);
-                                    Toast.makeText(this, "Pet profile saved!", Toast.LENGTH_SHORT).show();
-                                    Intent intent = new Intent(PetProfileCreationActivity.this, MainActivity.class);
-                                    startActivity(intent);
-                                    finish();
-                                }))
-                                .addOnFailureListener(e -> mainHandler.post(() -> {
-                                    showLoading(false);
-                                    Toast.makeText(this, "Failed to save pet profile: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                                }));
-                    })
+            databaseReference.updateChildren(updates)
+                    .addOnSuccessListener(aVoid -> mainHandler.post(() -> {
+                        showLoading(false);
+                        Toast.makeText(this, "Pet profile saved!", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(PetProfileCreationActivity.this, MainActivity.class);
+                        startActivity(intent);
+                        finish();
+                    }))
                     .addOnFailureListener(e -> mainHandler.post(() -> {
+                        Log.e(TAG, "Failed to save pet profile: " + e.getMessage(), e);
                         showLoading(false);
                         Toast.makeText(this, "Failed to save pet profile: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }));
@@ -243,7 +237,10 @@ public class PetProfileCreationActivity extends AppCompatActivity {
     }
 
     private void showLoading(boolean isLoading) {
-        findViewById(R.id.loadingIndicator).setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        ProgressBar loadingIndicator = findViewById(R.id.loadingIndicator);
+        if (loadingIndicator != null) {
+            loadingIndicator.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        }
         saveProfileButton.setEnabled(!isLoading);
     }
 

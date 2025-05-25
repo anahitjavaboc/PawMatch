@@ -2,7 +2,8 @@ package com.anahit.pawmatch;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.InputType;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
@@ -11,45 +12,35 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import com.anahit.pawmatch.BuildConfig; // Corrected import
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private FirebaseAuth auth;
     private EditText emailEditText, passwordEditText;
-    private Button loginButton, backToSignUpButton, testUserButton;
     private ImageView togglePasswordVisibility;
+    private Button loginButton, backToSignUpButton, testUserButton;
     private ProgressBar progressBar;
+    private FirebaseAuth auth;
     private boolean isPasswordVisible = false;
-
-    // Test user credentials
-    private static final String TEST_EMAIL = "individualproject2025@gmail.com";
-    private static final String TEST_PASSWORD = "Samsung2025";
+    private ExecutorService executorService;
+    private Handler mainHandler;
+    private static final long TIMEOUT_MS = 10000; // 10 seconds timeout
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        // Initialize ExecutorService and Handler
+        executorService = Executors.newSingleThreadExecutor();
+        mainHandler = new Handler(Looper.getMainLooper());
+
         auth = FirebaseAuth.getInstance();
+        // Using production Firebase servers (emulator removed)
 
-        if (BuildConfig.DEBUG) {
-            try {
-                auth.useEmulator("10.0.2.2", 9099); // Emulator for local testing
-            } catch (Exception e) {
-                Toast.makeText(this, "Firebase emulator setup failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        }
-
-        // Check if user is already logged in
-        if (auth.getCurrentUser() != null && auth.getCurrentUser().isEmailVerified()) {
-            startActivity(new Intent(LoginActivity.this, MainActivity.class)); // Redirect to MainActivity for flow check
-            finish();
-            return;
-        }
-
-        // Initialize views
         emailEditText = findViewById(R.id.emailEditText);
         passwordEditText = findViewById(R.id.passwordEditText);
         togglePasswordVisibility = findViewById(R.id.togglePasswordVisibility);
@@ -58,108 +49,137 @@ public class LoginActivity extends AppCompatActivity {
         testUserButton = findViewById(R.id.testUserButton);
         progressBar = findViewById(R.id.progressBar);
 
-        // Password visibility toggle
         togglePasswordVisibility.setOnClickListener(v -> {
-            if (isPasswordVisible) {
-                passwordEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                togglePasswordVisibility.setImageResource(R.drawable.ic_visibility_off);
-                isPasswordVisible = false;
-            } else {
-                passwordEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-                togglePasswordVisibility.setImageResource(R.drawable.ic_visibility);
-                isPasswordVisible = true;
-            }
-            passwordEditText.setSelection(passwordEditText.getText().length());
+            isPasswordVisible = !isPasswordVisible;
+            updatePasswordVisibility();
         });
 
-        // Login button click
-        loginButton.setOnClickListener(v -> {
-            String email = emailEditText.getText().toString().trim();
-            String password = passwordEditText.getText().toString().trim();
-
-            if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                emailEditText.setError("Enter a valid email");
-                emailEditText.requestFocus();
-                return;
-            }
-            if (password.isEmpty() || password.length() < 6) {
-                passwordEditText.setError("Password must be at least 6 characters");
-                passwordEditText.requestFocus();
-                return;
-            }
-
-            progressBar.setVisibility(View.VISIBLE);
-            loginButton.setEnabled(false);
-            backToSignUpButton.setEnabled(false);
-            testUserButton.setEnabled(false);
-
-            auth.signInWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(task -> {
-                        progressBar.setVisibility(View.GONE);
-                        loginButton.setEnabled(true);
-                        backToSignUpButton.setEnabled(true);
-                        testUserButton.setEnabled(true);
-
-                        if (task.isSuccessful()) {
-                            if (auth.getCurrentUser() != null) {
-                                if (auth.getCurrentUser().isEmailVerified()) {
-                                    startActivity(new Intent(LoginActivity.this, MainActivity.class)); // Redirect to MainActivity
-                                    finish();
-                                } else {
-                                    Toast.makeText(LoginActivity.this, "Please verify your email", Toast.LENGTH_SHORT).show();
-                                    auth.signOut();
-                                }
-                            } else {
-                                Toast.makeText(LoginActivity.this, "User not found. Please try again.", Toast.LENGTH_LONG).show();
-                            }
-                        } else {
-                            String errorMessage = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                            Toast.makeText(LoginActivity.this, "Login failed: " + errorMessage, Toast.LENGTH_LONG).show();
-                        }
-                    });
-        });
-
-        // Back to sign-up button click
+        loginButton.setOnClickListener(v -> loginUser());
         backToSignUpButton.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, SignUpActivity.class));
             finish();
         });
 
-        // Test user login functionality
-        testUserButton.setOnClickListener(v -> {
-            progressBar.setVisibility(View.VISIBLE);
-            loginButton.setEnabled(false);
-            backToSignUpButton.setEnabled(false);
-            testUserButton.setEnabled(false);
+        testUserButton.setOnClickListener(v -> loginTestUser());
+    }
 
-            auth.signInWithEmailAndPassword(TEST_EMAIL, TEST_PASSWORD)
+    private void updatePasswordVisibility() {
+        if (isPasswordVisible) {
+            passwordEditText.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+            togglePasswordVisibility.setImageResource(R.drawable.ic_visibility);
+        } else {
+            passwordEditText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            togglePasswordVisibility.setImageResource(R.drawable.ic_visibility_off);
+        }
+        passwordEditText.setSelection(passwordEditText.getText().length());
+    }
+
+    private void loginUser() {
+        String email = emailEditText.getText().toString().trim();
+        String password = passwordEditText.getText().toString().trim();
+
+        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emailEditText.setError("Enter a valid email");
+            emailEditText.requestFocus();
+            return;
+        }
+        if (password.isEmpty() || password.length() < 6) {
+            passwordEditText.setError("Password must be at least 6 characters");
+            passwordEditText.requestFocus();
+            return;
+        }
+
+        showLoading(true);
+        final Runnable timeoutRunnable = () -> {
+            showLoading(false);
+            Toast.makeText(this, "Login failed: Timeout or network error", Toast.LENGTH_LONG).show();
+        };
+        mainHandler.postDelayed(timeoutRunnable, TIMEOUT_MS);
+
+        executorService.execute(() -> {
+            auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            progressBar.setVisibility(View.GONE);
-                            loginButton.setEnabled(true);
-                            backToSignUpButton.setEnabled(true);
-                            testUserButton.setEnabled(true);
-
-                            startActivity(new Intent(LoginActivity.this, MainActivity.class)); // Redirect to MainActivity
-                            finish();
-                        } else {
-                            auth.createUserWithEmailAndPassword(TEST_EMAIL, TEST_PASSWORD)
-                                    .addOnCompleteListener(createTask -> {
-                                        progressBar.setVisibility(View.GONE);
-                                        loginButton.setEnabled(true);
-                                        backToSignUpButton.setEnabled(true);
-                                        testUserButton.setEnabled(true);
-
-                                        if (createTask.isSuccessful()) {
-                                            startActivity(new Intent(LoginActivity.this, MainActivity.class)); // Redirect to MainActivity
-                                            finish();
+                        mainHandler.removeCallbacks(timeoutRunnable); // Cancel timeout
+                        mainHandler.post(() -> {
+                            showLoading(false);
+                            if (task.isSuccessful()) {
+                                if (auth.getCurrentUser().isEmailVerified()) {
+                                    Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show();
+                                    startActivity(new Intent(this, MainActivity.class));
+                                    finish();
+                                } else {
+                                    auth.signOut();
+                                    Toast.makeText(this, "Please verify your email", Toast.LENGTH_LONG).show();
+                                }
+                            } else {
+                                String errorMessage = "Login failed: ";
+                                if (task.getException() != null) {
+                                    if (task.getException() instanceof FirebaseAuthException) {
+                                        String errorCode = ((FirebaseAuthException) task.getException()).getErrorCode();
+                                        if ("ERROR_WRONG_PASSWORD".equals(errorCode)) {
+                                            errorMessage += "Incorrect password";
+                                        } else if ("ERROR_USER_NOT_FOUND".equals(errorCode)) {
+                                            errorMessage += "User not found";
+                                        } else if ("ERROR_TOO_MANY_REQUESTS".equals(errorCode)) {
+                                            errorMessage += "Too many attempts, please try again later";
                                         } else {
-                                            String errorMessage = createTask.getException() != null ? createTask.getException().getMessage() : "Unknown error";
-                                            Toast.makeText(LoginActivity.this, "Failed to create test user: " + errorMessage, Toast.LENGTH_LONG).show();
+                                            errorMessage += task.getException().getMessage();
                                         }
-                                    });
-                        }
+                                    } else {
+                                        errorMessage += task.getException().getMessage();
+                                    }
+                                } else {
+                                    errorMessage += "Unknown error";
+                                }
+                                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+                            }
+                        });
                     });
         });
+    }
+
+    private void loginTestUser() {
+        String testEmail = "individualproject2025@gmail.com";
+        String testPassword = "Samsung2025";
+
+        showLoading(true);
+        final Runnable timeoutRunnable = () -> {
+            showLoading(false);
+            Toast.makeText(this, "Test Login failed: Timeout or network error", Toast.LENGTH_LONG).show();
+        };
+        mainHandler.postDelayed(timeoutRunnable, TIMEOUT_MS);
+
+        executorService.execute(() -> {
+            auth.signInWithEmailAndPassword(testEmail, testPassword)
+                    .addOnCompleteListener(task -> {
+                        mainHandler.removeCallbacks(timeoutRunnable); // Cancel timeout
+                        mainHandler.post(() -> {
+                            showLoading(false);
+                            if (task.isSuccessful()) {
+                                Toast.makeText(this, "Logged in as Test User", Toast.LENGTH_LONG).show();
+                                startActivity(new Intent(this, MainActivity.class));
+                                finish();
+                            } else {
+                                String errorMessage = "Test Login failed: " + (task.getException() != null ? task.getException().getMessage() : "Unknown error");
+                                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    });
+        });
+    }
+
+    private void showLoading(boolean isLoading) {
+        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        loginButton.setEnabled(!isLoading);
+        testUserButton.setEnabled(!isLoading);
+        backToSignUpButton.setEnabled(!isLoading);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 }

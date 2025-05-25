@@ -32,14 +32,6 @@
                 android:background="@android:color/darker_gray"
                 android:layout_marginBottom="16dp" />
 
-            <!-- Placeholder for Loading Indicator -->
-            <ProgressBar
-                android:id="@+id/loadingIndicator"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:visibility="gone"
-                android:layout_marginBottom="16dp" />
-
             <!-- Upload Button -->
             <Button
                 android:id="@+id/uploadImageButton"
@@ -148,4 +140,18 @@
 
         </LinearLayout>
     </ScrollView>
+
+    <!-- Loading Indicator -->
+    <ProgressBar
+        android:id="@+id/loadingIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintVertical_chainStyle="packed" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

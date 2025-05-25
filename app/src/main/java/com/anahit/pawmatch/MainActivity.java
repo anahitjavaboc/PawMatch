@@ -21,6 +21,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,11 +31,15 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseReference usersRef;
     private DatabaseReference petsRef;
     private String userId;
+    private ExecutorService executorService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Initialize ExecutorService for background tasks
+        executorService = Executors.newSingleThreadExecutor();
 
         // Follow system theme for day/night mode
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
@@ -59,48 +65,52 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkUserProfile() {
-        usersRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                if (!snapshot.exists()) {
-                    // User profile doesn't exist, redirect to OwnerProfileCreationActivity
-                    Intent intent = new Intent(MainActivity.this, OwnerProfileCreationActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                } else {
-                    // User profile exists, check for pet profile
-                    checkPetProfile();
+        executorService.execute(() -> {
+            usersRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    if (!snapshot.exists()) {
+                        // User profile doesn't exist, redirect to OwnerProfileCreationActivity
+                        Intent intent = new Intent(MainActivity.this, OwnerProfileCreationActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                    } else {
+                        // User profile exists, check for pet profile
+                        checkPetProfile();
+                    }
                 }
-            }
 
-            @Override
-            public void onCancelled(DatabaseError error) {
-                Log.e("MainActivity", "Error checking user profile: " + error.getMessage());
-            }
+                @Override
+                public void onCancelled(DatabaseError error) {
+                    Log.e("MainActivity", "Error checking user profile: " + error.getMessage());
+                }
+            });
         });
     }
 
     private void checkPetProfile() {
-        petsRef.orderByChild("ownerId").equalTo(userId).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                if (!snapshot.exists()) {
-                    // Pet profile doesn't exist, redirect to PetProfileCreationActivity
-                    Intent intent = new Intent(MainActivity.this, PetProfileCreationActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                } else {
-                    // Both profiles exist, proceed with UI setup
-                    setupUI();
+        executorService.execute(() -> {
+            petsRef.orderByChild("ownerId").equalTo(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    if (!snapshot.exists()) {
+                        // Pet profile doesn't exist, redirect to PetProfileCreationActivity
+                        Intent intent = new Intent(MainActivity.this, PetProfileCreationActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                    } else {
+                        // Both profiles exist, proceed with UI setup
+                        runOnUiThread(() -> setupUI());
+                    }
                 }
-            }
 
-            @Override
-            public void onCancelled(DatabaseError error) {
-                Log.e("MainActivity", "Error checking pet profile: " + error.getMessage());
-            }
+                @Override
+                public void onCancelled(DatabaseError error) {
+                    Log.e("MainActivity", "Error checking pet profile: " + error.getMessage());
+                }
+            });
         });
     }
 
@@ -221,6 +231,14 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public int getCount() {
             return 4;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (executorService != null) {
+            executorService.shutdown();
         }
     }
 }

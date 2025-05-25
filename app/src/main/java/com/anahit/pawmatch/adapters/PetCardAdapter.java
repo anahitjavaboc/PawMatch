@@ -10,7 +10,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.anahit.pawmatch.R;
 import com.anahit.pawmatch.models.Pet;
 import com.bumptech.glide.Glide;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +35,7 @@ public class PetCardAdapter extends RecyclerView.Adapter<PetCardAdapter.PetViewH
         Pet pet = petList.get(position);
         holder.nameTextView.setText(pet.getName() != null ? pet.getName() : "Unknown Pet");
         holder.healthTextView.setText("Health: " + (pet.getHealthStatus() != null ? pet.getHealthStatus() : "Not specified"));
-        holder.ageTextView.setText("Age: " + (pet.getAge() != null ? pet.getAge() : "Unknown"));
+        holder.ageTextView.setText("Age: " + (pet.getAge() > 0 ? pet.getAge() : "Unknown"));
         holder.breedTextView.setText("Breed: " + (pet.getBreed() != null ? pet.getBreed() : "Unknown"));
         holder.bioTextView.setText("Bio: " + (pet.getBio() != null ? pet.getBio() : "Not specified"));
 
