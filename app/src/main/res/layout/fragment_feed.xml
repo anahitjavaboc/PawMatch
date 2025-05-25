@@ -18,7 +18,7 @@
         android:contentDescription="Swipe instruction" />
 
     <com.yuyakaido.android.cardstackview.CardStackView
-        android:id="@+id/cardStackView"
+        android:id="@+id/card_stack_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -27,5 +27,31 @@
         android:contentDescription="Swipe through pet profiles"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="16dp">
+
+        <ImageView
+            android:id="@+id/swipeLeftIcon"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:src="@drawable/ic_dislike"
+            android:visibility="gone"
+            android:contentDescription="Swipe left to dislike"
+            android:layout_marginEnd="32dp" />
+
+        <ImageView
+            android:id="@+id/swipeRightIcon"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:src="@drawable/ic_like"
+            android:visibility="gone"
+            android:contentDescription="Swipe right to like"
+            android:layout_marginStart="32dp" />
+    </LinearLayout>
 
 </LinearLayout>

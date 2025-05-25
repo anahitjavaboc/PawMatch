@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = "MainActivity";
     private ViewPager viewPager;
     private ImageButton feedButton, matchesButton, healthButton, profileButton;
     private DatabaseReference usersRef;
@@ -38,17 +39,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Initialize ExecutorService for background tasks
         executorService = Executors.newSingleThreadExecutor();
 
-        // Follow system theme for day/night mode
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
 
         FirebaseAuth auth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = auth.getCurrentUser();
 
         if (currentUser == null) {
-            // User not logged in, redirect to LoginActivity
+            Log.w(TAG, "User not authenticated, redirecting to login.");
             Intent intent = new Intent(this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
@@ -60,80 +59,83 @@ public class MainActivity extends AppCompatActivity {
         usersRef = FirebaseDatabase.getInstance().getReference("users");
         petsRef = FirebaseDatabase.getInstance().getReference("pets");
 
-        // Check if user profile exists
         checkUserProfile();
     }
 
     private void checkUserProfile() {
         executorService.execute(() -> {
-            usersRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
-                    if (!snapshot.exists()) {
-                        // User profile doesn't exist, redirect to OwnerProfileCreationActivity
-                        Intent intent = new Intent(MainActivity.this, OwnerProfileCreationActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                        finish();
-                    } else {
-                        // User profile exists, check for pet profile
-                        checkPetProfile();
+            try {
+                usersRef.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot snapshot) {
+                        if (!snapshot.exists()) {
+                            Log.i(TAG, "No user profile found, redirecting to OwnerProfileCreationActivity.");
+                            Intent intent = new Intent(MainActivity.this, OwnerProfileCreationActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            checkPetProfile();
+                        }
                     }
-                }
 
-                @Override
-                public void onCancelled(DatabaseError error) {
-                    Log.e("MainActivity", "Error checking user profile: " + error.getMessage());
-                }
-            });
+                    @Override
+                    public void onCancelled(DatabaseError error) {
+                        Log.e(TAG, "Error checking user profile: " + error.getMessage(), error.toException());
+                    }
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Unexpected error in checkUserProfile: " + e.getMessage(), e);
+            }
         });
     }
 
     private void checkPetProfile() {
         executorService.execute(() -> {
-            petsRef.orderByChild("ownerId").equalTo(userId).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
-                    if (!snapshot.exists()) {
-                        // Pet profile doesn't exist, redirect to PetProfileCreationActivity
-                        Intent intent = new Intent(MainActivity.this, PetProfileCreationActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                        finish();
-                    } else {
-                        // Both profiles exist, proceed with UI setup
-                        runOnUiThread(() -> setupUI());
+            try {
+                petsRef.orderByChild("ownerId").equalTo(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot snapshot) {
+                        if (!snapshot.exists()) {
+                            Log.i(TAG, "No pet profile found, redirecting to PetProfileCreationActivity.");
+                            Intent intent = new Intent(MainActivity.this, PetProfileCreationActivity.class);
+                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            runOnUiThread(() -> setupUI());
+                        }
                     }
-                }
 
-                @Override
-                public void onCancelled(DatabaseError error) {
-                    Log.e("MainActivity", "Error checking pet profile: " + error.getMessage());
-                }
-            });
+                    @Override
+                    public void onCancelled(DatabaseError error) {
+                        Log.e(TAG, "Error checking pet profile: " + error.getMessage(), error.toException());
+                    }
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Unexpected error in checkPetProfile: " + e.getMessage(), e);
+            }
         });
     }
 
+    @SuppressWarnings("deprecation") // Suppress warning for FragmentStatePagerAdapter
     private void setupUI() {
-        // Initialize views
         viewPager = findViewById(R.id.view_pager);
         feedButton = findViewById(R.id.feed_button);
         matchesButton = findViewById(R.id.matches_button);
         healthButton = findViewById(R.id.health_button);
         profileButton = findViewById(R.id.profile_button);
 
-        // Setup ViewPager with FragmentStatePagerAdapter
         HomePagerAdapter pagerAdapter = new HomePagerAdapter(getSupportFragmentManager());
         viewPager.setAdapter(pagerAdapter);
 
-        // Add ViewPager listener to log fragment changes
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
 
             @Override
             public void onPageSelected(int position) {
-                Log.d("MainActivity", "ViewPager switched to position: " + position);
+                Log.d(TAG, "ViewPager switched to position: " + position);
                 updateButtonState(position);
             }
 
@@ -141,43 +143,39 @@ public class MainActivity extends AppCompatActivity {
             public void onPageScrollStateChanged(int state) {}
         });
 
-        // Set click listeners for bottom navigation buttons
         feedButton.setOnClickListener(v -> {
-            Log.d("MainActivity", "Feed button clicked");
+            Log.d(TAG, "Feed button clicked");
             viewPager.setCurrentItem(0);
             updateButtonState(0);
         });
 
         matchesButton.setOnClickListener(v -> {
-            Log.d("MainActivity", "Matches button clicked");
+            Log.d(TAG, "Matches button clicked");
             viewPager.setCurrentItem(1);
             updateButtonState(1);
         });
 
         healthButton.setOnClickListener(v -> {
-            Log.d("MainActivity", "Health button clicked");
+            Log.d(TAG, "Health button clicked");
             viewPager.setCurrentItem(2);
             updateButtonState(2);
         });
 
         profileButton.setOnClickListener(v -> {
-            Log.d("MainActivity", "Profile button clicked");
+            Log.d(TAG, "Profile button clicked");
             viewPager.setCurrentItem(3);
             updateButtonState(3);
         });
 
-        // Set initial state
         updateButtonState(0);
     }
 
     private void updateButtonState(int position) {
-        // Reset all buttons to unselected state
         feedButton.setSelected(false);
         matchesButton.setSelected(false);
         healthButton.setSelected(false);
         profileButton.setSelected(false);
 
-        // Set the selected button and update icon
         switch (position) {
             case 0:
                 feedButton.setSelected(true);
@@ -196,14 +194,12 @@ public class MainActivity extends AppCompatActivity {
                 profileButton.setImageResource(R.drawable.ic_profile);
                 break;
         }
-        // Reset unselected icons
         if (position != 0) feedButton.setImageResource(R.drawable.ic_feed);
         if (position != 1) matchesButton.setImageResource(R.drawable.ic_matches);
         if (position != 2) healthButton.setImageResource(R.drawable.ic_health);
         if (position != 3) profileButton.setImageResource(R.drawable.ic_profile);
     }
 
-    // Custom PagerAdapter for fragments
     private class HomePagerAdapter extends FragmentStatePagerAdapter {
         public HomePagerAdapter(FragmentManager fm) {
             super(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
@@ -213,18 +209,20 @@ public class MainActivity extends AppCompatActivity {
         public Fragment getItem(int position) {
             switch (position) {
                 case 0:
-                    Log.d("MainActivity", "Loading FeedFragment");
+                    Log.d(TAG, "Loading FeedFragment");
                     return new FeedFragment();
                 case 1:
-                    Log.d("MainActivity", "Loading MatchesFragment");
+                    Log.d(TAG, "Loading MatchesFragment");
                     return new MatchesFragment();
                 case 2:
-                    Log.d("MainActivity", "Loading HealthFragment");
+                    Log.d(TAG, "Loading HealthFragment");
                     return new HealthFragment();
                 case 3:
-                    Log.d("MainActivity", "Loading ProfileFragment");
+                    Log.d(TAG, "Loading ProfileFragment");
                     return new ProfileFragment();
-                default: return null;
+                default:
+                    Log.w(TAG, "Invalid position: " + position);
+                    return null; // Maintain original behavior
             }
         }
 

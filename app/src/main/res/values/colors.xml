@@ -14,4 +14,8 @@
     <color name="received_message_background">#E0E0E0</color>
     <color name="appBackground">#f4f0e4</color>
     <color name="hintColor">#B0B0B0</color>
+    <color name="like_color">#8BC78D</color> <!-- Green for Like -->
+    <color name="dislike_color">#F47F76</color> <!-- Red for Dislike -->
+    <color name="edit_color">#FFC107</color> <!-- Amber color for visibility -->
+
 </resources>

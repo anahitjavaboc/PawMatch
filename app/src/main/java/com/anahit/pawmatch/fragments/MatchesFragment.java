@@ -42,7 +42,7 @@ public class MatchesFragment extends Fragment implements CardStackListener {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_matches, container, false);
 
-        cardStackView = view.findViewById(R.id.matchesRecyclerView); // Reuse RecyclerView ID for CardStackView
+        cardStackView = view.findViewById(R.id.matchesRecyclerView);
         if (cardStackView == null) {
             Toast.makeText(requireContext(), "CardStackView not found in layout", Toast.LENGTH_SHORT).show();
             return view;
@@ -63,55 +63,61 @@ public class MatchesFragment extends Fragment implements CardStackListener {
         layoutManager.setTranslationInterval(8.0f);
         cardStackView.setLayoutManager(layoutManager);
 
+        adapter = new PetCardAdapter(requireContext(), matchPetList);
+        cardStackView.setAdapter(adapter);
+
         fetchMatches();
 
         return view;
     }
 
     private void fetchMatches() {
-        matchesListener = matchesRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                matchPetList.clear();
-                for (DataSnapshot matchSnapshot : snapshot.getChildren()) {
-                    Match match = matchSnapshot.getValue(Match.class);
-                    if (match != null && (match.getUser1().equals(currentUserId) || match.getUser2().equals(currentUserId))) {
-                        String petId = match.getUser2().equals(currentUserId) ? match.getUser1() : match.getUser2();
-                        petsRef.child(petId).addListenerForSingleValueEvent(new ValueEventListener() {
-                            @Override
-                            public void onDataChange(@NonNull DataSnapshot petSnapshot) {
-                                Pet pet = petSnapshot.getValue(Pet.class);
-                                if (pet != null) {
-                                    pet.setId(petSnapshot.getKey());
-                                    matchPetList.add(pet);
-                                    if (adapter == null) {
-                                        adapter = new PetCardAdapter(requireContext(), matchPetList);
-                                        cardStackView.setAdapter(adapter);
-                                    } else {
-                                        adapter.updateData(matchPetList);
-                                        adapter.notifyDataSetChanged();
-                                    }
+        matchesListener = matchesRef.orderByChild("petOwnerId").equalTo(currentUserId)
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        matchPetList.clear();
+                        for (DataSnapshot matchSnapshot : snapshot.getChildren()) {
+                            Match match = matchSnapshot.getValue(Match.class);
+                            if (match != null && "matched".equals(match.getStatus())) {
+                                String petId = match.getPetId();
+                                if (petId != null) {
+                                    petsRef.child(petId).addListenerForSingleValueEvent(new ValueEventListener() {
+                                        @Override
+                                        public void onDataChange(@NonNull DataSnapshot petSnapshot) {
+                                            Pet pet = petSnapshot.getValue(Pet.class);
+                                            if (pet != null) {
+                                                pet.setId(petSnapshot.getKey());
+                                                pet.setImageUrl(match.getPetImageUrl()); // Use match data
+                                                pet.setOwnerName(match.getOwnerName()); // Use match data
+                                                if (!matchPetList.contains(pet)) {
+                                                    matchPetList.add(pet);
+                                                }
+                                                adapter.notifyDataSetChanged();
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onCancelled(@NonNull DatabaseError error) {
+                                            Log.e(TAG, "Failed to fetch pet: " + error.getMessage());
+                                        }
+                                    });
                                 }
                             }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError error) {
-                                Log.e(TAG, "Failed to fetch pet: " + error.getMessage());
-                            }
-                        });
+                        }
+                        if (matchPetList.isEmpty()) {
+                            Toast.makeText(requireContext(), "No matches found", Toast.LENGTH_LONG).show();
+                        } else {
+                            adapter.notifyDataSetChanged();
+                        }
                     }
-                }
-                if (matchPetList.isEmpty()) {
-                    Toast.makeText(requireContext(), "No matches found", Toast.LENGTH_LONG).show();
-                }
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e(TAG, "Failed to fetch matches: " + error.getMessage());
-                Toast.makeText(requireContext(), "Failed to load matches", Toast.LENGTH_SHORT).show();
-            }
-        });
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "Failed to fetch matches: " + error.getMessage());
+                        Toast.makeText(requireContext(), "Failed to load matches", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     @Override
@@ -122,16 +128,15 @@ public class MatchesFragment extends Fragment implements CardStackListener {
         if (position < 0 || position >= matchPetList.size()) return;
 
         Pet pet = matchPetList.get(position);
-        matchPetList.remove(position);
-
         if (direction == Direction.Right) {
-            Toast.makeText(requireContext(), "Liked " + (pet.getName() != null ? pet.getName() : "pet"), Toast.LENGTH_SHORT).show();
-            // TODO: Implement chat navigation (e.g., to ChatActivity)
+            Toast.makeText(requireContext(), "Starting chat with " + (pet.getName() != null ? pet.getName() : "pet"), Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(requireContext(), ChatActivity.class);
+            intent.putExtra("petId", pet.getId());
+            intent.putExtra("ownerId", pet.getOwnerId());
+            startActivity(intent);
         } else if (direction == Direction.Left) {
             Toast.makeText(requireContext(), "Skipped " + (pet.getName() != null ? pet.getName() : "pet"), Toast.LENGTH_SHORT).show();
         }
-
-        adapter.notifyDataSetChanged();
     }
 
     @Override

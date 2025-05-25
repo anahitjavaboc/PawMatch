@@ -1,5 +1,6 @@
 package com.anahit.pawmatch.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,6 +10,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.fragment.app.Fragment;
+
+import com.anahit.pawmatch.OwnerProfileEditActivity;
+import com.anahit.pawmatch.PetProfileEditActivity;
 import com.anahit.pawmatch.R;
 import com.anahit.pawmatch.models.Pet;
 import com.anahit.pawmatch.models.User;
@@ -23,7 +27,7 @@ import com.google.firebase.database.ValueEventListener;
 public class ProfileFragment extends Fragment {
 
     private TextView ownerNameTextView, ownerInfoTextView, petNameTextView, petInfoTextView;
-    private ImageView ownerImageView, petImageView;
+    private ImageView ownerImageView, petImageView, editOwnerProfileButton, editPetProfileButton;
     private DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
     private DatabaseReference petsRef = FirebaseDatabase.getInstance().getReference("pets");
     private String currentUserId;
@@ -38,6 +42,8 @@ public class ProfileFragment extends Fragment {
         petImageView = view.findViewById(R.id.profile_pet_image);
         petNameTextView = view.findViewById(R.id.profile_pet_name);
         petInfoTextView = view.findViewById(R.id.profile_pet_info);
+        editOwnerProfileButton = view.findViewById(R.id.edit_owner_profile);
+        editPetProfileButton = view.findViewById(R.id.edit_pet_profile);
 
         currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null
                 ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
@@ -50,6 +56,19 @@ public class ProfileFragment extends Fragment {
 
         loadOwnerProfile();
         loadPetProfile();
+
+        editOwnerProfileButton.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), OwnerProfileEditActivity.class);
+            intent.putExtra("USER_ID", currentUserId);
+            startActivity(intent);
+        });
+
+        editPetProfileButton.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), PetProfileEditActivity.class);
+            intent.putExtra("OWNER_ID", currentUserId);
+            startActivity(intent);
+        });
+
         return view;
     }
 

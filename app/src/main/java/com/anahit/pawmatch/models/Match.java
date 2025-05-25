@@ -2,9 +2,9 @@ package com.anahit.pawmatch.models;
 
 public class Match {
     private String id;
-    private String user1;
-    private String user2;
+    private String userId; // Changed from user1 to align with FeedFragment
     private String petId;
+    private String petOwnerId; // Changed from user2 to petOwnerId
     private String petName;
     private String ownerName;
     private String petImageUrl;
@@ -13,12 +13,12 @@ public class Match {
 
     public Match() {}
 
-    public Match(String id, String user1, String user2, String petId, String petName, String ownerName,
+    public Match(String id, String userId, String petId, String petOwnerId, String petName, String ownerName,
                  String petImageUrl, long timestamp, String status) {
         this.id = id;
-        this.user1 = user1;
-        this.user2 = user2;
+        this.userId = userId;
         this.petId = petId;
+        this.petOwnerId = petOwnerId;
         this.petName = petName;
         this.ownerName = ownerName;
         this.petImageUrl = petImageUrl;
@@ -29,12 +29,12 @@ public class Match {
     // Getters and setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
-    public String getUser1() { return user1; }
-    public void setUser1(String user1) { this.user1 = user1; }
-    public String getUser2() { return user2; }
-    public void setUser2(String user2) { this.user2 = user2; }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
     public String getPetId() { return petId; }
     public void setPetId(String petId) { this.petId = petId; }
+    public String getPetOwnerId() { return petOwnerId; }
+    public void setPetOwnerId(String petOwnerId) { this.petOwnerId = petOwnerId; }
     public String getPetName() { return petName; }
     public void setPetName(String petName) { this.petName = petName; }
     public String getOwnerName() { return ownerName; }

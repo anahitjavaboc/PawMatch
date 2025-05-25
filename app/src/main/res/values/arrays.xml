@@ -6,4 +6,17 @@
         <item>Female</item>
         <item>Other</item>
     </string-array>
+
+<string-array name="animal_types">
+    <item>Dog</item>
+    <item>Cat</item>
+    <item>Bird</item>
+    <item>Rabbit</item>
+    <item>Reptile</item>
+    <item>Rodent</item>
+    <item>Fish</item>
+    <item>Farm Animal</item>
+    <item>Exotic Pet</item>
+    <item>Other</item>
+</string-array>
 </resources>

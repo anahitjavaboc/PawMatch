@@ -50,4 +50,5 @@
     <string name="replace_first_spot">Replace First Pet</string>
     <string name="card_stack_description">Swipe through pet profiles to find a match.</string>
     <string name="swap_first_for_last">Swap First and Last Pet</string>
+    <string name="pet_type">Your Pet Type</string>
 </resources>

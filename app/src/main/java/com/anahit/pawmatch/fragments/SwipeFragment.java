@@ -1,10 +1,13 @@
 package com.anahit.pawmatch.fragments;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -24,7 +27,6 @@ import com.yuyakaido.android.cardstackview.CardStackView;
 import com.yuyakaido.android.cardstackview.Direction;
 import com.yuyakaido.android.cardstackview.Duration;
 import com.yuyakaido.android.cardstackview.SwipeAnimationSetting;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,12 +43,17 @@ public class SwipeFragment extends Fragment {
     private DatabaseReference matchesRef;
     private ValueEventListener petsListener;
     private CardStackLayoutManager layoutManager;
+    private ImageView swipeLeftIcon, swipeRightIcon;
 
+    @SuppressLint("MissingInflatedId")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_swipe, container, false);
+        View view = inflater.inflate(R.layout.fragment_feed, container, false);
 
         cardStackView = view.findViewById(R.id.card_stack_view);
+        swipeLeftIcon = view.findViewById(R.id.swipeLeftIcon);
+        swipeRightIcon = view.findViewById(R.id.swipeRightIcon);
+
         if (cardStackView == null) {
             Toast.makeText(requireContext(), "CardStackView not found in layout", Toast.LENGTH_SHORT).show();
             return view;
@@ -55,6 +62,7 @@ public class SwipeFragment extends Fragment {
         petsRef = FirebaseDatabase.getInstance().getReference("pets");
         matchesRef = FirebaseDatabase.getInstance().getReference("matches");
 
+        checkStoragePermission();
         setupCardStackView();
         loadPets();
 
@@ -72,10 +80,12 @@ public class SwipeFragment extends Fragment {
                     adapter.notifyItemRemoved(position);
 
                     if (direction == Direction.Right) {
-                        Toast.makeText(requireContext(), "Liked " + (swipedPet.getName() != null ? swipedPet.getName() : "Unknown Pet"), Toast.LENGTH_SHORT).show();
+                        swipeRightIcon.setVisibility(View.VISIBLE);
+                        Toast.makeText(requireContext(), "Liked " + swipedPet.getName(), Toast.LENGTH_SHORT).show();
                         saveMatch(swipedPet);
                     } else if (direction == Direction.Left) {
-                        Toast.makeText(requireContext(), "Passed " + (swipedPet.getName() != null ? swipedPet.getName() : "Unknown Pet"), Toast.LENGTH_SHORT).show();
+                        swipeLeftIcon.setVisibility(View.VISIBLE);
+                        Toast.makeText(requireContext(), "Passed " + swipedPet.getName(), Toast.LENGTH_SHORT).show();
                     }
 
                     if (petList.isEmpty()) {
@@ -85,7 +95,10 @@ public class SwipeFragment extends Fragment {
             }
 
             @Override
-            public void onCardDragging(Direction direction, float ratio) {}
+            public void onCardDragging(Direction direction, float ratio) {
+                swipeLeftIcon.setVisibility(View.GONE);
+                swipeRightIcon.setVisibility(View.GONE);
+            }
 
             @Override
             public void onCardRewound() {}
@@ -105,6 +118,10 @@ public class SwipeFragment extends Fragment {
                 .setDuration(Duration.Normal.duration)
                 .build();
         layoutManager.setSwipeAnimationSetting(swipeRightSetting);
+        layoutManager.setDirections(Direction.HORIZONTAL);
+        layoutManager.setSwipeThreshold(0.3f);
+        layoutManager.setMaxDegree(20.0f);
+        layoutManager.setTranslationInterval(8.0f);
 
         cardStackView.setLayoutManager(layoutManager);
         adapter = new PetCardAdapter(requireContext(), petList);
@@ -128,6 +145,7 @@ public class SwipeFragment extends Fragment {
                     Pet pet = data.getValue(Pet.class);
                     if (pet != null && !pet.getOwnerId().equals(currentUserId)) {
                         pet.setId(data.getKey());
+                        // Fetch owner name if needed (e.g., from users node)
                         petList.add(pet);
                     }
                 }
@@ -156,79 +174,43 @@ public class SwipeFragment extends Fragment {
         }
         String currentUserId = currentUser.getUid();
 
-        Map<String, Object> matchData = new HashMap<>();
-        matchData.put("userId", currentUserId);
-        matchData.put("petId", likedPet.getId());
-        matchData.put("petOwnerId", likedPet.getOwnerId());
-        matchData.put("timestamp", System.currentTimeMillis());
+        // Fetch owner name from users node
+        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users").child(likedPet.getOwnerId());
+        usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String ownerName = snapshot.child("name").getValue(String.class);
+                if (ownerName != null) {
+                    likedPet.setOwnerName(ownerName);
+                }
 
-        matchesRef.push().setValue(matchData)
-                .addOnSuccessListener(aVoid -> Toast.makeText(requireContext(), "Match saved!", Toast.LENGTH_SHORT).show())
-                .addOnFailureListener(e -> Toast.makeText(requireContext(), "Failed to save match: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                Map<String, Object> matchData = new HashMap<>();
+                matchData.put("userId", currentUserId);
+                matchData.put("petId", likedPet.getId());
+                matchData.put("petOwnerId", likedPet.getOwnerId());
+                matchData.put("petName", likedPet.getName());
+                matchData.put("ownerName", likedPet.getOwnerName());
+                matchData.put("petImageUrl", likedPet.getImageUrl());
+                matchData.put("timestamp", System.currentTimeMillis());
+                matchData.put("status", "pending");
+
+                matchesRef.push().setValue(matchData)
+                        .addOnSuccessListener(aVoid -> Toast.makeText(requireContext(), "Match saved!", Toast.LENGTH_SHORT).show())
+                        .addOnFailureListener(e -> Toast.makeText(requireContext(), "Failed to save match: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Failed to fetch owner name: " + error.getMessage());
+                Toast.makeText(requireContext(), "Failed to fetch owner name: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
-    public void reloadPets() {
-        loadPets();
-    }
-
-    public void addPetToFirst() {
-        if (petList.isEmpty()) {
-            Toast.makeText(requireContext(), "No pets to add", Toast.LENGTH_SHORT).show();
-            return;
+    private void checkStoragePermission() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 101);
         }
-        Pet newPet = new Pet("New Pet", "Unknown", FirebaseAuth.getInstance().getCurrentUser().getUid(), "");
-        petList.add(0, newPet);
-        adapter.notifyItemInserted(0);
-    }
-
-    public void addPetToLast() {
-        if (petList.isEmpty()) {
-            Toast.makeText(requireContext(), "No pets to add", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        Pet newPet = new Pet("New Pet", "Unknown", FirebaseAuth.getInstance().getCurrentUser().getUid(), "");
-        petList.add(newPet);
-        adapter.notifyItemInserted(petList.size() - 1);
-    }
-
-    public void removePetFromFirst() {
-        if (petList.isEmpty()) {
-            Toast.makeText(requireContext(), "No pets to remove", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        petList.remove(0);
-        adapter.notifyItemRemoved(0);
-    }
-
-    public void removePetFromLast() {
-        if (petList.isEmpty()) {
-            Toast.makeText(requireContext(), "No pets to remove", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        int lastPosition = petList.size() - 1;
-        petList.remove(lastPosition);
-        adapter.notifyItemRemoved(lastPosition);
-    }
-
-    public void replaceFirstPet() {
-        if (petList.isEmpty()) {
-            Toast.makeText(requireContext(), "No pets to replace", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        petList.set(0, new Pet("Replaced Pet", "Unknown", FirebaseAuth.getInstance().getCurrentUser().getUid(), ""));
-        adapter.notifyItemChanged(0);
-    }
-
-    public void swapFirstForLast() {
-        if (petList.size() < 2) {
-            Toast.makeText(requireContext(), "Need at least two pets to swap", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        Pet first = petList.get(0);
-        Pet last = petList.get(petList.size() - 1);
-        petList.set(0, last);
-        petList.set(petList.size() - 1, first);
-        adapter.notifyItemMoved(0, petList.size() - 1);
     }
 
     @Override

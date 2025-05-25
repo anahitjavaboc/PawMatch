@@ -8,25 +8,22 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.anahit.pawmatch.R;
-import com.anahit.pawmatch.models.Match;
+import com.anahit.pawmatch.models.Pet; // Changed from Match to Pet
 import com.bumptech.glide.Glide;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 public class MatchesAdapter extends RecyclerView.Adapter<MatchesAdapter.MatchViewHolder> {
 
-    private List<Match> matchList;
+    private List<Pet> matchPetList; // Changed to Pet list
     private OnMatchClickListener listener;
 
     public interface OnMatchClickListener {
-        void onMatchClick(Match match);
+        void onMatchClick(Pet pet);
     }
 
-    public MatchesAdapter(List<Match> matchList, OnMatchClickListener listener) {
-        this.matchList = matchList != null ? matchList : new ArrayList<>();
+    public MatchesAdapter(List<Pet> matchPetList, OnMatchClickListener listener) {
+        this.matchPetList = matchPetList != null ? matchPetList : new ArrayList<>();
         this.listener = listener;
     }
 
@@ -39,12 +36,12 @@ public class MatchesAdapter extends RecyclerView.Adapter<MatchesAdapter.MatchVie
 
     @Override
     public void onBindViewHolder(@NonNull MatchViewHolder holder, int position) {
-        Match match = matchList.get(position);
+        Pet pet = matchPetList.get(position);
 
         // Bind pet image
-        if (match.getPetImageUrl() != null && !match.getPetImageUrl().isEmpty()) {
+        if (pet.getImageUrl() != null && !pet.getImageUrl().isEmpty()) {
             Glide.with(holder.itemView.getContext())
-                    .load(match.getPetImageUrl())
+                    .load(pet.getImageUrl())
                     .placeholder(R.drawable.pawmatchlogo)
                     .error(R.drawable.pawmatchlogo)
                     .into(holder.petImageView);
@@ -53,27 +50,30 @@ public class MatchesAdapter extends RecyclerView.Adapter<MatchesAdapter.MatchVie
         }
 
         // Bind text fields
-        holder.petNameTextView.setText(match.getPetName() != null ? match.getPetName() : "Unknown Pet");
-        holder.ownerNameTextView.setText(match.getOwnerName() != null ? match.getOwnerName() : "Unknown Owner");
+        holder.petNameTextView.setText(pet.getName() != null ? pet.getName() : "Unknown Pet");
+        holder.ownerNameTextView.setText(pet.getOwnerName() != null ? pet.getOwnerName() : "Unknown Owner");
 
-        // Format and bind timestamp
-        String timestampStr = "Unknown time";
-        if (match.getTimestamp() != 0) {
-            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
-            timestampStr = sdf.format(new Date(match.getTimestamp()));
-        }
-        holder.matchTimestamp.setText(timestampStr);
-
-        // Bind status
-        holder.matchStatus.setText("Status: " + (match.getStatus() != null ? match.getStatus() : "Pending"));
+        // No timestamp or status in Pet model; remove if not needed
+        holder.matchTimestamp.setVisibility(View.GONE);
+        holder.matchStatus.setVisibility(View.GONE);
 
         // Set click listener
-        holder.itemView.setOnClickListener(v -> listener.onMatchClick(match));
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onMatchClick(pet);
+        });
     }
 
     @Override
     public int getItemCount() {
-        return matchList != null ? matchList.size() : 0;
+        return matchPetList != null ? matchPetList.size() : 0;
+    }
+
+    public void updateData(List<Pet> newList) {
+        matchPetList.clear();
+        if (newList != null) {
+            matchPetList.addAll(newList);
+        }
+        notifyDataSetChanged();
     }
 
     static class MatchViewHolder extends RecyclerView.ViewHolder {

@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FFFFFF">
+    android:background="#f4f0e4">
 
     <TextView
         android:id="@+id/matchesLabel"
@@ -27,5 +27,15 @@
         android:contentDescription="Swipe through matched profiles"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp" />
+
+    <TextView
+        android:id="@+id/noMatchesText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No matches yet. Swipe right on pets to find matches!"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="16dp" />
 
 </LinearLayout>
