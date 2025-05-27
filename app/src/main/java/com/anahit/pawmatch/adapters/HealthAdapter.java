@@ -3,18 +3,22 @@ package com.anahit.pawmatch.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.anahit.pawmatch.R;
+import com.anahit.pawmatch.fragments.HealthFragment;
 import com.anahit.pawmatch.models.Pet;
 import java.util.List;
 
 public class HealthAdapter extends RecyclerView.Adapter<HealthAdapter.HealthViewHolder> {
     private List<Pet> petList;
+    private HealthFragment fragment;
 
-    public HealthAdapter(List<Pet> petList) {
+    public HealthAdapter(List<Pet> petList, HealthFragment fragment) {
         this.petList = petList;
+        this.fragment = fragment;
     }
 
     @NonNull
@@ -33,6 +37,20 @@ public class HealthAdapter extends RecyclerView.Adapter<HealthAdapter.HealthView
         holder.ageTextView.setText("Age: " + (pet.getAge() > 0 ? pet.getAge() : "Unknown"));
         holder.breedTextView.setText("Breed: " + (pet.getBreed() != null ? pet.getBreed() : "Unknown"));
         holder.bioTextView.setText("Bio: " + (pet.getBio() != null ? pet.getBio() : "Not specified"));
+
+        // Set button click listeners
+        holder.viewVaccinationsButton.setOnClickListener(v -> {
+            if (fragment != null) fragment.onViewVaccinationsClick(pet);
+        });
+        holder.viewMedicalHistoryButton.setOnClickListener(v -> {
+            if (fragment != null) fragment.onViewMedicalHistoryClick(pet);
+        });
+        holder.viewMedicationsButton.setOnClickListener(v -> {
+            if (fragment != null) fragment.onViewMedicationsClick(pet);
+        });
+        holder.viewVetAppointmentsButton.setOnClickListener(v -> {
+            if (fragment != null) fragment.onViewVetAppointmentsClick(pet);
+        });
     }
 
     @Override
@@ -46,6 +64,10 @@ public class HealthAdapter extends RecyclerView.Adapter<HealthAdapter.HealthView
         TextView ageTextView;
         TextView breedTextView;
         TextView bioTextView;
+        Button viewVaccinationsButton;
+        Button viewMedicalHistoryButton;
+        Button viewMedicationsButton;
+        Button viewVetAppointmentsButton;
 
         public HealthViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -54,6 +76,10 @@ public class HealthAdapter extends RecyclerView.Adapter<HealthAdapter.HealthView
             ageTextView = itemView.findViewById(R.id.ageTextView);
             breedTextView = itemView.findViewById(R.id.breedTextView);
             bioTextView = itemView.findViewById(R.id.bioTextView);
+            viewVaccinationsButton = itemView.findViewById(R.id.viewVaccinationsButton);
+            viewMedicalHistoryButton = itemView.findViewById(R.id.viewMedicalHistoryButton);
+            viewMedicationsButton = itemView.findViewById(R.id.viewMedicationsButton);
+            viewVetAppointmentsButton = itemView.findViewById(R.id.viewVetAppointmentsButton);
         }
     }
 }

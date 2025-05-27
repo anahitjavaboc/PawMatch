@@ -32,9 +32,6 @@
     <string name="owner_age">Owner Age</string>
     <string name="owner_gender">Owner Gender</string>
     <string name="gender_options">Select Gender</string>
-    <string name="chat_messages_list_description">List of chat messages</string>
-    <string name="type_message_hint">Type a message</string>
-    <string name="send_button_label">Send</string>
     <string name="save">Save</string>
     <string name="enter_your_pet_s_gender">Enter your pet\'s gender</string>
     <string name="swipeable_pet_cards">Swipeable pet cards</string>
@@ -51,4 +48,7 @@
     <string name="card_stack_description">Swipe through pet profiles to find a match.</string>
     <string name="swap_first_for_last">Swap First and Last Pet</string>
     <string name="pet_type">Your Pet Type</string>
+    <string name="chat_messages_list_description">List of chat messages</string>
+    <string name="type_message_hint">Type a message...</string>
+    <string name="send_button_label">Send</string>
 </resources>

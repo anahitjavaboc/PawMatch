@@ -3,10 +3,13 @@ package com.anahit.pawmatch.fragments;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -33,17 +36,17 @@ import java.util.List;
 import java.util.Map;
 
 public class SwipeFragment extends Fragment {
-
     private static final String TAG = "SwipeFragment";
 
     private CardStackView cardStackView;
     private PetCardAdapter adapter;
     private List<Pet> petList = new ArrayList<>();
-    private DatabaseReference petsRef;
-    private DatabaseReference matchesRef;
+    private DatabaseReference petsRef, matchesRef;
     private ValueEventListener petsListener;
     private CardStackLayoutManager layoutManager;
     private ImageView swipeLeftIcon, swipeRightIcon;
+    private Button rulesInfoButton;
+    private Handler handler = new Handler(Looper.getMainLooper());
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -53,9 +56,14 @@ public class SwipeFragment extends Fragment {
         cardStackView = view.findViewById(R.id.card_stack_view);
         swipeLeftIcon = view.findViewById(R.id.swipeLeftIcon);
         swipeRightIcon = view.findViewById(R.id.swipeRightIcon);
+        rulesInfoButton = view.findViewById(R.id.rules_info_button);
 
         if (cardStackView == null) {
-            Toast.makeText(requireContext(), "CardStackView not found in layout", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "card_stack_view not found in layout!");
+            return view;
+        }
+        if (rulesInfoButton == null) {
+            Log.e(TAG, "rules_info_button not found in layout!");
             return view;
         }
 
@@ -65,6 +73,12 @@ public class SwipeFragment extends Fragment {
         checkStoragePermission();
         setupCardStackView();
         loadPets();
+
+        // Set click listener with debugging
+        rulesInfoButton.setOnClickListener(v -> {
+            Log.d(TAG, "rules_info_button clicked at " + System.currentTimeMillis());
+            showRules();
+        });
 
         return view;
     }
@@ -100,24 +114,16 @@ public class SwipeFragment extends Fragment {
                 swipeRightIcon.setVisibility(View.GONE);
             }
 
-            @Override
-            public void onCardRewound() {}
-
-            @Override
-            public void onCardCanceled() {}
-
-            @Override
-            public void onCardAppeared(View view, int position) {}
-
-            @Override
-            public void onCardDisappeared(View view, int position) {}
+            @Override public void onCardRewound() {}
+            @Override public void onCardCanceled() {}
+            @Override public void onCardAppeared(View view, int position) {}
+            @Override public void onCardDisappeared(View view, int position) {}
         });
 
-        SwipeAnimationSetting swipeRightSetting = new SwipeAnimationSetting.Builder()
+        layoutManager.setSwipeAnimationSetting(new SwipeAnimationSetting.Builder()
                 .setDirection(Direction.Right)
                 .setDuration(Duration.Normal.duration)
-                .build();
-        layoutManager.setSwipeAnimationSetting(swipeRightSetting);
+                .build());
         layoutManager.setDirections(Direction.HORIZONTAL);
         layoutManager.setSwipeThreshold(0.3f);
         layoutManager.setMaxDegree(20.0f);
@@ -134,8 +140,6 @@ public class SwipeFragment extends Fragment {
             Toast.makeText(requireContext(), "Please log in to swipe pets", Toast.LENGTH_LONG).show();
             return;
         }
-        String currentUserId = currentUser.getUid();
-        Log.d(TAG, "Loading pets for user: " + currentUserId);
 
         petsListener = new ValueEventListener() {
             @Override
@@ -143,24 +147,17 @@ public class SwipeFragment extends Fragment {
                 petList.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Pet pet = data.getValue(Pet.class);
-                    if (pet != null && !pet.getOwnerId().equals(currentUserId)) {
+                    if (pet != null && !pet.getOwnerId().equals(currentUser.getUid())) {
                         pet.setId(data.getKey());
-                        // Fetch owner name if needed (e.g., from users node)
                         petList.add(pet);
                     }
                 }
                 adapter.notifyDataSetChanged();
-                Log.d(TAG, "Loaded " + petList.size() + " pets");
-
-                if (petList.isEmpty()) {
-                    Toast.makeText(requireContext(), "No pets available to swipe", Toast.LENGTH_LONG).show();
-                }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Log.e(TAG, "Error loading pets: " + error.getMessage(), error.toException());
-                Toast.makeText(requireContext(), "Error loading pets: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Error loading pets", Toast.LENGTH_SHORT).show();
             }
         };
         petsRef.addValueEventListener(petsListener);
@@ -172,17 +169,14 @@ public class SwipeFragment extends Fragment {
             Toast.makeText(requireContext(), "Please log in to save matches", Toast.LENGTH_LONG).show();
             return;
         }
-        String currentUserId = currentUser.getUid();
 
-        // Fetch owner name from users node
+        String currentUserId = currentUser.getUid();
         DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users").child(likedPet.getOwnerId());
+
         usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String ownerName = snapshot.child("name").getValue(String.class);
-                if (ownerName != null) {
-                    likedPet.setOwnerName(ownerName);
-                }
+                likedPet.setOwnerName(snapshot.child("name").getValue(String.class));
 
                 Map<String, Object> matchData = new HashMap<>();
                 matchData.put("userId", currentUserId);
@@ -196,15 +190,26 @@ public class SwipeFragment extends Fragment {
 
                 matchesRef.push().setValue(matchData)
                         .addOnSuccessListener(aVoid -> Toast.makeText(requireContext(), "Match saved!", Toast.LENGTH_SHORT).show())
-                        .addOnFailureListener(e -> Toast.makeText(requireContext(), "Failed to save match: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                        .addOnFailureListener(e -> Toast.makeText(requireContext(), "Failed to save match", Toast.LENGTH_SHORT).show());
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Log.e(TAG, "Failed to fetch owner name: " + error.getMessage());
-                Toast.makeText(requireContext(), "Failed to fetch owner name: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Failed to fetch owner name", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void showRules() {
+        String rules = "If you like the pet, swipe it to the right; if not, swipe to the left.\n" +
+                "Check in your matches if you matched with anyone and chat with them.";
+        Toast toast = Toast.makeText(requireContext(), rules, Toast.LENGTH_LONG);
+        toast.show();
+        Log.d(TAG, "Showing rules toast at " + System.currentTimeMillis());
+        handler.postDelayed(() -> {
+            toast.cancel();
+            Log.d(TAG, "Rules toast dismissed at " + System.currentTimeMillis());
+        }, 4000); // Display for 4 seconds
     }
 
     private void checkStoragePermission() {
@@ -219,5 +224,6 @@ public class SwipeFragment extends Fragment {
         if (petsListener != null) {
             petsRef.removeEventListener(petsListener);
         }
+        handler.removeCallbacksAndMessages(null);
     }
 }

@@ -6,11 +6,16 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.anahit.pawmatch.LoginActivity;
 import com.anahit.pawmatch.OwnerProfileEditActivity;
 import com.anahit.pawmatch.PetProfileEditActivity;
 import com.anahit.pawmatch.R;
@@ -28,6 +33,7 @@ public class ProfileFragment extends Fragment {
 
     private TextView ownerNameTextView, ownerInfoTextView, petNameTextView, petInfoTextView;
     private ImageView ownerImageView, petImageView, editOwnerProfileButton, editPetProfileButton;
+    private Button logoutButton;
     private DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
     private DatabaseReference petsRef = FirebaseDatabase.getInstance().getReference("pets");
     private String currentUserId;
@@ -44,6 +50,7 @@ public class ProfileFragment extends Fragment {
         petInfoTextView = view.findViewById(R.id.profile_pet_info);
         editOwnerProfileButton = view.findViewById(R.id.edit_owner_profile);
         editPetProfileButton = view.findViewById(R.id.edit_pet_profile);
+        logoutButton = view.findViewById(R.id.logout_button);
 
         currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null
                 ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
@@ -54,22 +61,50 @@ public class ProfileFragment extends Fragment {
             return view;
         }
 
+        // Load initial data
         loadOwnerProfile();
         loadPetProfile();
 
         editOwnerProfileButton.setOnClickListener(v -> {
-            Intent intent = new Intent(requireContext(), OwnerProfileEditActivity.class);
+            Intent intent = new Intent(getActivity(), OwnerProfileEditActivity.class);
             intent.putExtra("USER_ID", currentUserId);
             startActivity(intent);
         });
 
         editPetProfileButton.setOnClickListener(v -> {
-            Intent intent = new Intent(requireContext(), PetProfileEditActivity.class);
+            Intent intent = new Intent(getActivity(), PetProfileEditActivity.class);
             intent.putExtra("OWNER_ID", currentUserId);
             startActivity(intent);
         });
 
+        if (logoutButton != null) {
+            logoutButton.setOnClickListener(v -> {
+                FirebaseAuth.getInstance().signOut();
+                Intent intent = new Intent(getActivity(), LoginActivity.class);
+                startActivity(intent);
+                if (getActivity() != null) {
+                    getActivity().finish();
+                }
+            });
+        } else {
+            Log.e("ProfileFragment", "Logout button not found in layout");
+        }
+
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Refresh data when the fragment becomes visible
+        refreshProfile();
+    }
+
+    public void refreshProfile() {
+        if (currentUserId != null) {
+            loadOwnerProfile();
+            loadPetProfile();
+        }
     }
 
     private void loadOwnerProfile() {

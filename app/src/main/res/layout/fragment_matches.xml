@@ -16,15 +16,14 @@
         android:padding="16dp"
         android:textStyle="bold" />
 
-    <com.yuyakaido.android.cardstackview.CardStackView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/matchesRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:padding="8dp"
         android:clipToPadding="false"
-        android:labelFor="@id/matchesLabel"
-        android:contentDescription="Swipe through matched profiles"
+        android:contentDescription="Swipe through chat rooms"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp" />
 
@@ -32,7 +31,7 @@
         android:id="@+id/noMatchesText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="No matches yet. Swipe right on pets to find matches!"
+        android:text="No chats yet. Start matching to chat!"
         android:textSize="16sp"
         android:gravity="center"
         android:visibility="gone"

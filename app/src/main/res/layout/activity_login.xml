@@ -92,7 +92,7 @@
                 android:layout_height="24dp"
                 android:src="@drawable/ic_visibility_off"
                 android:layout_marginStart="12dp"
-                app:tint="@color/splash_background"
+                app:tint="@color/black"
                 android:contentDescription="Toggle password visibility"/>
         </LinearLayout>
 

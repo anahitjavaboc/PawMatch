@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.method.PasswordTransformationMethod;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
@@ -33,14 +34,13 @@ public class SignUpActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sign_up);
+        setContentView(R.layout.activity_sign_up); // Ensure the layout name matches your file
 
         // Initialize ExecutorService and Handler
         executorService = Executors.newSingleThreadExecutor();
         mainHandler = new Handler(Looper.getMainLooper());
 
         auth = FirebaseAuth.getInstance();
-        // Using production Firebase servers (emulator removed)
 
         emailEditText = findViewById(R.id.emailEditText);
         passwordEditText = findViewById(R.id.passwordEditText);
@@ -73,12 +73,13 @@ public class SignUpActivity extends AppCompatActivity {
 
     private void updatePasswordVisibility(EditText editText, ImageView toggleIcon, boolean isVisible) {
         if (isVisible) {
-            editText.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+            editText.setTransformationMethod(null); // Show password
             toggleIcon.setImageResource(R.drawable.ic_visibility);
         } else {
-            editText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            editText.setTransformationMethod(new PasswordTransformationMethod()); // Hide password
             toggleIcon.setImageResource(R.drawable.ic_visibility_off);
         }
+        // Maintain cursor position at the end after toggling visibility
         editText.setSelection(editText.getText().length());
     }
 

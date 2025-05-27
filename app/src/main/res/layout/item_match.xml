@@ -38,12 +38,14 @@
             <TextView
                 android:id="@+id/match_pet_name"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="49dp"
                 android:text="Pet Name"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="#FF6F61"
-                android:paddingBottom="4dp" />
+                android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#FF6F61"
+            android:paddingBottom="4dp"
+            android:clickable="true"
+            android:focusable="true" />
 
             <TextView
                 android:id="@+id/match_owner_name"

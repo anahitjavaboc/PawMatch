@@ -1,5 +1,8 @@
 package com.anahit.pawmatch.adapters;
 
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,6 +10,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.anahit.pawmatch.ChatActivity;
 import com.anahit.pawmatch.R;
 import com.anahit.pawmatch.models.ChatRoom;
 import com.bumptech.glide.Glide;
@@ -19,21 +23,22 @@ import java.util.Locale;
 public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRoomViewHolder> {
 
     private List<ChatRoom> chatRoomList;
-    private OnChatRoomClickListener listener;
+    private Context context;
+    private OnItemClickListener onItemClickListener;
 
-    public interface OnChatRoomClickListener {
-        void onChatRoomClick(ChatRoom chatRoom);
+    public ChatRoomAdapter(Context context, List<ChatRoom> chatRoomList) {
+        this.context = context;
+        this.chatRoomList = chatRoomList != null ? chatRoomList : new ArrayList<>();
     }
 
-    public ChatRoomAdapter(List<ChatRoom> chatRoomList, OnChatRoomClickListener listener) {
-        this.chatRoomList = chatRoomList != null ? chatRoomList : new ArrayList<>();
-        this.listener = listener;
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.onItemClickListener = listener;
     }
 
     @NonNull
     @Override
     public ChatRoomViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_chat_room, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_match, parent, false);
         return new ChatRoomViewHolder(view);
     }
 
@@ -41,22 +46,20 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
     public void onBindViewHolder(@NonNull ChatRoomViewHolder holder, int position) {
         ChatRoom chatRoom = chatRoomList.get(position);
 
-        // Bind pet image
-        if (chatRoom.getPetImageUrl() != null && !chatRoom.getPetImageUrl().isEmpty()) {
-            Glide.with(holder.itemView.getContext())
-                    .load(chatRoom.getPetImageUrl())
-                    .placeholder(R.drawable.pawmatchlogo)
-                    .error(R.drawable.pawmatchlogo)
-                    .into(holder.petImageView);
-        } else {
-            holder.petImageView.setImageResource(R.drawable.pawmatchlogo);
-        }
+        Glide.with(context)
+                .load(chatRoom.getPetImageUrl())
+                .placeholder(R.drawable.pawmatchlogo)
+                .error(R.drawable.pawmatchlogo)
+                .fallback(R.drawable.pawmatchlogo)
+                .into(holder.petImageView);
 
-        // Bind text fields
         holder.petNameTextView.setText(chatRoom.getPetName() != null ? chatRoom.getPetName() : "Unknown Pet");
         holder.ownerNameTextView.setText(chatRoom.getOtherUserName() != null ? chatRoom.getOtherUserName() : "Unknown Owner");
 
-        // Format and bind timestamp
+        if (chatRoom.getTimestamp() > System.currentTimeMillis()) {
+            chatRoom.setTimestamp(System.currentTimeMillis());
+        }
+
         String timestampStr = "Last Message: Unknown";
         if (chatRoom.getTimestamp() != 0) {
             SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
@@ -64,11 +67,13 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
         }
         holder.timestampTextView.setText(timestampStr);
 
-        // Bind status
         holder.statusTextView.setText("Status: " + (chatRoom.getStatus() != null ? chatRoom.getStatus() : "Active"));
 
-        // Set click listener
-        holder.itemView.setOnClickListener(v -> listener.onChatRoomClick(chatRoom));
+        holder.itemView.setOnClickListener(v -> {
+            if (onItemClickListener != null) {
+                onItemClickListener.onItemClick(chatRoom);
+            }
+        });
     }
 
     @Override
@@ -78,18 +83,19 @@ public class ChatRoomAdapter extends RecyclerView.Adapter<ChatRoomAdapter.ChatRo
 
     static class ChatRoomViewHolder extends RecyclerView.ViewHolder {
         ImageView petImageView;
-        TextView petNameTextView;
-        TextView ownerNameTextView;
-        TextView timestampTextView;
-        TextView statusTextView;
+        TextView petNameTextView, ownerNameTextView, timestampTextView, statusTextView;
 
         ChatRoomViewHolder(@NonNull View itemView) {
             super(itemView);
-            petImageView = itemView.findViewById(R.id.chat_room_pet_image);
-            petNameTextView = itemView.findViewById(R.id.chat_room_pet_name);
-            ownerNameTextView = itemView.findViewById(R.id.chat_room_owner_name);
-            timestampTextView = itemView.findViewById(R.id.chat_room_timestamp);
-            statusTextView = itemView.findViewById(R.id.chat_room_status);
+            petImageView = itemView.findViewById(R.id.match_pet_image);
+            petNameTextView = itemView.findViewById(R.id.match_pet_name);
+            ownerNameTextView = itemView.findViewById(R.id.match_owner_name);
+            timestampTextView = itemView.findViewById(R.id.match_timestamp);
+            statusTextView = itemView.findViewById(R.id.match_status);
         }
+    }
+
+    public interface OnItemClickListener {
+        void onItemClick(ChatRoom chatRoom);
     }
 }

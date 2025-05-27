@@ -38,13 +38,13 @@
             android:layout_height="20dp"
             android:src="@drawable/ic_email"
             android:layout_marginEnd="12dp"
-            app:tint="@color/splash_background"
+            app:tint="@color/black"
             android:contentDescription="Email icon"/>
 
         <EditText
             android:id="@+id/emailEditText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="49dp"
             android:background="@drawable/edittext_background"
             android:hint="Email"
             android:inputType="textEmailAddress"
@@ -66,13 +66,13 @@
             android:layout_height="20dp"
             android:src="@drawable/ic_lock"
             android:layout_marginEnd="12dp"
-            app:tint="@color/splash_background"
+            app:tint="@color/black"
             android:contentDescription="Password icon"/>
 
         <EditText
             android:id="@+id/passwordEditText"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="49dp"
             android:layout_weight="1"
             android:background="@drawable/edittext_background"
             android:hint="Password"
@@ -87,8 +87,9 @@
             android:layout_height="24dp"
             android:src="@drawable/ic_visibility_off"
             android:layout_marginStart="12dp"
-            app:tint="@color/splash_background"
-            android:contentDescription="Toggle password visibility"/>
+            app:tint="@color/black"
+            android:contentDescription="Toggle password visibility"
+            android:focusable="false" /> <!-- Prevent focus stealing -->
     </LinearLayout>
 
     <!-- Confirm Password Field -->
@@ -104,20 +105,21 @@
             android:layout_height="20dp"
             android:src="@drawable/ic_lock"
             android:layout_marginEnd="12dp"
-            app:tint="@color/splash_background"
+            app:tint="@color/black"
             android:contentDescription="Confirm password icon"/>
 
         <EditText
             android:id="@+id/confirmPasswordEditText"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="49dp"
             android:layout_weight="1"
             android:background="@drawable/edittext_background"
             android:hint="Confirm Password"
             android:inputType="textPassword"
             android:padding="12dp"
             android:textSize="16sp"
-            android:textColor="#424242"/>
+            android:textColor="#424242"
+            android:imeOptions="actionDone" /> <!-- Improves keyboard behavior -->
 
         <ImageView
             android:id="@+id/toggleConfirmPasswordVisibility"
@@ -125,8 +127,9 @@
             android:layout_height="24dp"
             android:src="@drawable/ic_visibility_off"
             android:layout_marginStart="12dp"
-            app:tint="@color/splash_background"
-            android:contentDescription="Toggle confirm password visibility"/>
+            app:tint="@color/black"
+            android:contentDescription="Toggle confirm password visibility"
+            android:focusable="false" /> <!-- Prevent focus stealing -->
     </LinearLayout>
 
     <!-- Sign-Up Button -->
@@ -154,6 +157,7 @@
         android:textColor="@color/black"
         android:background="@null"
         android:textSize="14sp"/>
+
     <Button
         android:id="@+id/testUserButton"
         android:layout_width="wrap_content"

@@ -5,13 +5,17 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast; // Add this import
+import android.widget.Toast;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.anahit.pawmatch.R;
 import com.anahit.pawmatch.adapters.HealthAdapter;
 import com.anahit.pawmatch.models.Pet;
+import com.anahit.pawmatch.dialogs.VaccinationDialogFragment;
+import com.anahit.pawmatch.dialogs.MedicalHistoryDialogFragment;
+import com.anahit.pawmatch.dialogs.MedicationDialogFragment;
+import com.anahit.pawmatch.dialogs.VetAppointmentDialogFragment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -39,7 +43,7 @@ public class HealthFragment extends Fragment {
         }
 
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new HealthAdapter(pets);
+        adapter = new HealthAdapter(pets, this); // Pass fragment for button callbacks
         recyclerView.setAdapter(adapter);
 
         currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null
@@ -81,5 +85,25 @@ public class HealthFragment extends Fragment {
                 Toast.makeText(requireContext(), "Failed to load pet data", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    public void onViewVaccinationsClick(Pet pet) {
+        VaccinationDialogFragment dialog = VaccinationDialogFragment.newInstance(pet);
+        dialog.show(getChildFragmentManager(), "VaccinationDialog");
+    }
+
+    public void onViewMedicalHistoryClick(Pet pet) {
+        MedicalHistoryDialogFragment dialog = MedicalHealthDialogFragment.newInstance(pet);
+        dialog.show(getChildFragmentManager(), "MedicalHistoryDialog");
+    }
+
+    public void onViewMedicationsClick(Pet pet) {
+        MedicationDialogFragment dialog = MedicationDialogFragment.newInstance(pet);
+        dialog.show(getChildFragmentManager(), "MedicationDialog");
+    }
+
+    public void onViewVetAppointmentsClick(Pet pet) {
+        VetAppointmentDialogFragment dialog = VetAppointmentDialogFragment.newInstance(pet);
+        dialog.show(getChildFragmentManager(), "VetAppointmentDialog");
     }
 }

@@ -10,8 +10,8 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:name=".PawMatchApplication"
@@ -47,7 +47,7 @@
         <activity
             android:name=".SignUpActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustResize|stateVisible" />
 
         <!-- Main Activity -->
         <activity
@@ -67,16 +67,28 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Pet Profile Edit Activity -->
+        <activity
+            android:name=".PetProfileEditActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Owner Profile Edit Activity -->
+        <activity
+            android:name=".OwnerProfileEditActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Chat Activity -->
         <activity
             android:name=".ChatActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <activity android:name=".OwnerProfileEditActivity" />
-        <activity android:name=".PetProfileEditActivity" />
-
-
+        <!-- Receiver for vet appointment reminders (optional, for future implementation) -->
+        <receiver
+            android:name=".ReminderReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -1,19 +1,27 @@
 package com.anahit.pawmatch;
 
+import android.Manifest;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ImageButton;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentStatePagerAdapter;
-import androidx.viewpager.widget.ViewPager;
+import androidx.viewpager2.widget.ViewPager2;
 import com.anahit.pawmatch.fragments.FeedFragment;
 import com.anahit.pawmatch.fragments.HealthFragment;
 import com.anahit.pawmatch.fragments.MatchesFragment;
 import com.anahit.pawmatch.fragments.ProfileFragment;
+import com.anahit.pawmatch.models.Pet;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -27,7 +35,8 @@ import java.util.concurrent.Executors;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private ViewPager viewPager;
+    private static final int NOTIFICATION_PERMISSION_CODE = 101;
+    private ViewPager2 viewPager;
     private ImageButton feedButton, matchesButton, healthButton, profileButton;
     private DatabaseReference usersRef;
     private DatabaseReference petsRef;
@@ -59,7 +68,35 @@ public class MainActivity extends AppCompatActivity {
         usersRef = FirebaseDatabase.getInstance().getReference("users");
         petsRef = FirebaseDatabase.getInstance().getReference("pets");
 
+        // Request notification permission for Android 13+
+        requestNotificationPermission();
+
         checkUserProfile();
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_CODE);
+            } else {
+                Log.d(TAG, "Notification permission already granted");
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == NOTIFICATION_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Notification permission granted");
+                // Now that permission is granted, schedule notifications
+                scheduleVetAppointmentNotifications();
+            } else {
+                Log.w(TAG, "Notification permission denied");
+                Toast.makeText(this, "Notification permission denied. Vet reminders won't work.", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void checkUserProfile() {
@@ -103,7 +140,10 @@ public class MainActivity extends AppCompatActivity {
                             startActivity(intent);
                             finish();
                         } else {
-                            runOnUiThread(() -> setupUI());
+                            runOnUiThread(() -> {
+                                setupUI();
+                                scheduleVetAppointmentNotifications();
+                            });
                         }
                     }
 
@@ -118,7 +158,59 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @SuppressWarnings("deprecation") // Suppress warning for FragmentStatePagerAdapter
+    private void scheduleVetAppointmentNotifications() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "Cannot schedule notifications without permission");
+            return;
+        }
+
+        executorService.execute(() -> {
+            petsRef.orderByChild("ownerId").equalTo(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                    for (DataSnapshot petSnapshot : snapshot.getChildren()) {
+                        Pet pet = petSnapshot.getValue(Pet.class);
+                        if (pet != null && pet.getVetAppointments() != null) {
+                            for (Map.Entry<String, Pet.VetAppointment> entry : pet.getVetAppointments().entrySet()) {
+                                String apptKey = entry.getKey();
+                                Pet.VetAppointment appt = entry.getValue();
+                                long reminderTimestamp = appt.getReminderTimestamp();
+
+                                if (reminderTimestamp > System.currentTimeMillis()) {
+                                    Intent intent = new Intent(MainActivity.this, ReminderReceiver.class);
+                                    intent.putExtra("pet_name", pet.getName());
+                                    intent.putExtra("appt_date", appt.getDate());
+                                    intent.putExtra("appt_key", apptKey);
+
+                                    PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                                            MainActivity.this,
+                                            apptKey.hashCode(),
+                                            intent,
+                                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                                    );
+
+                                    try {
+                                        alarmManager.setExact(AlarmManager.RTC_WAKEUP, reminderTimestamp, pendingIntent);
+                                        Log.d(TAG, "Scheduled vet appointment reminder for " + pet.getName() + " at " + reminderTimestamp);
+                                    } catch (SecurityException e) {
+                                        Log.e(TAG, "Failed to schedule alarm: " + e.getMessage(), e);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError error) {
+                    Log.e(TAG, "Error fetching pets for notifications: " + error.getMessage(), error.toException());
+                }
+            });
+        });
+    }
+
     private void setupUI() {
         viewPager = findViewById(R.id.view_pager);
         feedButton = findViewById(R.id.feed_button);
@@ -126,48 +218,57 @@ public class MainActivity extends AppCompatActivity {
         healthButton = findViewById(R.id.health_button);
         profileButton = findViewById(R.id.profile_button);
 
-        HomePagerAdapter pagerAdapter = new HomePagerAdapter(getSupportFragmentManager());
+        HomePagerAdapter pagerAdapter = new HomePagerAdapter(this);
         viewPager.setAdapter(pagerAdapter);
 
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+        String fragmentToLoad = getIntent().getStringExtra("fragment_to_load");
+        int initialPosition = 0; // Default to Feed
+        if ("profile".equals(fragmentToLoad)) {
+            initialPosition = 3; // Profile is at position 3
+        }
+        viewPager.setCurrentItem(initialPosition, false);
 
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
                 Log.d(TAG, "ViewPager switched to position: " + position);
                 updateButtonState(position);
+                // Refresh ProfileFragment if it's selected
+                if (position == 3) {
+                    Fragment fragment = getSupportFragmentManager()
+                            .findFragmentByTag("f" + viewPager.getCurrentItem());
+                    if (fragment instanceof ProfileFragment) {
+                        ((ProfileFragment) fragment).refreshProfile();
+                    }
+                }
             }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {}
         });
 
         feedButton.setOnClickListener(v -> {
             Log.d(TAG, "Feed button clicked");
-            viewPager.setCurrentItem(0);
+            viewPager.setCurrentItem(0, false);
             updateButtonState(0);
         });
 
         matchesButton.setOnClickListener(v -> {
             Log.d(TAG, "Matches button clicked");
-            viewPager.setCurrentItem(1);
+            viewPager.setCurrentItem(1, false);
             updateButtonState(1);
         });
 
         healthButton.setOnClickListener(v -> {
             Log.d(TAG, "Health button clicked");
-            viewPager.setCurrentItem(2);
+            viewPager.setCurrentItem(2, false);
             updateButtonState(2);
         });
 
         profileButton.setOnClickListener(v -> {
             Log.d(TAG, "Profile button clicked");
-            viewPager.setCurrentItem(3);
+            viewPager.setCurrentItem(3, false);
             updateButtonState(3);
         });
 
-        updateButtonState(0);
+        updateButtonState(initialPosition);
     }
 
     private void updateButtonState(int position) {
@@ -200,13 +301,13 @@ public class MainActivity extends AppCompatActivity {
         if (position != 3) profileButton.setImageResource(R.drawable.ic_profile);
     }
 
-    private class HomePagerAdapter extends FragmentStatePagerAdapter {
-        public HomePagerAdapter(FragmentManager fm) {
-            super(fm, BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
+    private class HomePagerAdapter extends androidx.viewpager2.adapter.FragmentStateAdapter {
+        public HomePagerAdapter(AppCompatActivity activity) {
+            super(activity);
         }
 
         @Override
-        public Fragment getItem(int position) {
+        public Fragment createFragment(int position) {
             switch (position) {
                 case 0:
                     Log.d(TAG, "Loading FeedFragment");
@@ -222,13 +323,24 @@ public class MainActivity extends AppCompatActivity {
                     return new ProfileFragment();
                 default:
                     Log.w(TAG, "Invalid position: " + position);
-                    return null; // Maintain original behavior
+                    return new FeedFragment(); // Fallback to FeedFragment
             }
         }
 
         @Override
-        public int getCount() {
+        public int getItemCount() {
             return 4;
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String fragmentToLoad = intent.getStringExtra("fragment_to_load");
+        if ("profile".equals(fragmentToLoad) && viewPager != null) {
+            viewPager.setCurrentItem(3, false);
+            updateButtonState(3);
         }
     }
 

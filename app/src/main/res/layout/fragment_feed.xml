@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -52,6 +52,31 @@
             android:visibility="gone"
             android:contentDescription="Swipe right to like"
             android:layout_marginStart="32dp" />
+
+        <Button
+            android:id="@+id/rules_info_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Rules"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/grey"
+            android:padding="8dp"
+            android:background="@null"
+            android:contentDescription="Show usage rules"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginStart="32dp" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/rulesTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="16sp"
+        android:textColor="@android:color/black"
+        android:visibility="gone"
+        android:padding="16dp" />
 
 </LinearLayout>

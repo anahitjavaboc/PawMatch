@@ -62,6 +62,51 @@
             android:layout_height="wrap_content"
             android:text="Bio: Not specified"
             android:textSize="14sp"
-            android:textColor="@color/grey" />
+            android:textColor="@color/grey"
+            android:paddingBottom="8dp" />
+
+        <!-- Expandable Section Buttons -->
+        <Button
+            android:id="@+id/viewVaccinationsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="View Vaccination Records"
+            android:textSize="14sp"
+            android:background="@drawable/rounded_button_background"
+            android:textColor="@color/white"
+            android:padding="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <Button
+            android:id="@+id/viewMedicalHistoryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="View Medical History"
+            android:textSize="14sp"
+            android:background="@drawable/rounded_button_background"
+            android:textColor="@color/white"
+            android:padding="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <Button
+            android:id="@+id/viewMedicationsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="View Medications"
+            android:textSize="14sp"
+            android:background="@drawable/rounded_button_background"
+            android:textColor="@color/white"
+            android:padding="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <Button
+            android:id="@+id/viewVetAppointmentsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="View Vet Appointments"
+            android:textSize="14sp"
+            android:background="@drawable/rounded_button_background"
+            android:textColor="@color/white"
+            android:padding="8dp" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

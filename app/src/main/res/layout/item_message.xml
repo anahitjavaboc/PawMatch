@@ -17,44 +17,46 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp"
-        android:background="@android:color/white">
+        android:padding="8dp">
 
         <TextView
             android:id="@+id/senderTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="start"
             android:textSize="14sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:paddingBottom="4dp"
-            android:text="Sender ID" />
+            android:textColor="#FF6F61"
+            android:paddingBottom="2dp"
+            android:text="Sender" />
 
-        <TextView
-            android:id="@+id/messageText"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textColor="@android:color/black"
-            android:paddingBottom="4dp"
-            android:text="Message Text" />
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:layout_gravity="start"
+            android:background="@drawable/message_background"
+            app:cardCornerRadius="8dp">
 
-        <TextView
-            android:id="@+id/contentTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="@android:color/darker_gray"
-            android:paddingBottom="4dp"
-            android:text="Additional Content" />
+            <TextView
+                android:id="@+id/messageText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textColor="@android:color/black"
+                android:paddingBottom="2dp"
+                android:text="Message Text"
+                android:maxWidth="260dp" />
 
-        <TextView
-            android:id="@+id/timestampTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="@android:color/darker_gray"
-            android:text="Timestamp" />
-
+            <TextView
+                android:id="@+id/timestampTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:textSize="10sp"
+                android:textColor="#757575"
+                android:text="Timestamp" />
+        </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

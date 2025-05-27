@@ -13,14 +13,26 @@
         android:textSize="20sp"
         android:textStyle="bold"
         android:padding="8dp"
-        android:contentDescription="Heading: Pet Health Tips" />
+        android:contentDescription="Heading: Pet Health Profile" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/healthRecyclerView"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp"
-        android:contentDescription="List of pet health profiles" />
+        android:layout_weight="1">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/healthRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:contentDescription="List of pet health profiles" />
+
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

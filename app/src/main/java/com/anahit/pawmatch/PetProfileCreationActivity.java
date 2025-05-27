@@ -9,17 +9,21 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.Toast;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
 import com.anahit.pawmatch.models.Pet;
 import com.bumptech.glide.Glide;
 import com.cloudinary.android.MediaManager;
@@ -29,6 +33,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +44,7 @@ public class PetProfileCreationActivity extends AppCompatActivity {
     private ImageView petImageView;
     private Button uploadImageButton, saveProfileButton;
     private EditText petNameEditText, petAgeEditText, petBreedEditText, petBioEditText;
+    private Spinner animalTypeSpinner;
     private Uri filePath;
     private String imageUrl;
     private DatabaseReference databaseReference;
@@ -93,6 +99,12 @@ public class PetProfileCreationActivity extends AppCompatActivity {
         petAgeEditText = findViewById(R.id.petAgeEditText);
         petBreedEditText = findViewById(R.id.petBreedEditText);
         petBioEditText = findViewById(R.id.petBioEditText);
+        animalTypeSpinner = findViewById(R.id.animalTypeSpinner);
+
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+                this, R.array.animal_types, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        animalTypeSpinner.setAdapter(adapter);
 
         uploadImageButton.setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED) {
@@ -122,8 +134,9 @@ public class PetProfileCreationActivity extends AppCompatActivity {
         String petAgeStr = petAgeEditText.getText().toString().trim();
         String petBreed = petBreedEditText.getText().toString().trim();
         String petBio = petBioEditText.getText().toString().trim();
+        String animalType = animalTypeSpinner.getSelectedItem().toString();
 
-        if (petName.isEmpty() || petAgeStr.isEmpty() || petBreed.isEmpty() || petBio.isEmpty()) {
+        if (petName.isEmpty() || petAgeStr.isEmpty() || petBreed.isEmpty() || petBio.isEmpty() || animalType.equals("Select Type")) {
             Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
             Log.d(TAG, "Validation failed: Empty fields");
             return;
@@ -167,7 +180,7 @@ public class PetProfileCreationActivity extends AppCompatActivity {
                             Log.d(TAG, "Pet profile image uploaded successfully: " + imageUrl);
                             mainHandler.post(() -> {
                                 showLoading(false);
-                                savePetToFirebase(petId, petName, petAge, petBreed, petBio);
+                                savePetToFirebase(petId, petName, petAge, petBreed, petBio, animalType);
                             });
                         }
 
@@ -195,7 +208,7 @@ public class PetProfileCreationActivity extends AppCompatActivity {
         });
     }
 
-    private void savePetToFirebase(String petId, String petName, int petAge, String petBreed, String petBio) {
+    private void savePetToFirebase(String petId, String petName, int petAge, String petBreed, String petBio, String animalType) {
         showLoading(true);
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
@@ -212,8 +225,8 @@ public class PetProfileCreationActivity extends AppCompatActivity {
         pet.setBreed(petBreed);
         pet.setBio(petBio);
         pet.setHealthStatus("Unknown");
+        pet.setSpecies(animalType); // Use animalType instead of species
 
-        // Write to pets/<petId>
         Map<String, Object> updates = new HashMap<>();
         updates.put("pets/" + petId, pet);
 
@@ -225,6 +238,8 @@ public class PetProfileCreationActivity extends AppCompatActivity {
                         showLoading(false);
                         Toast.makeText(this, "Pet profile saved!", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(PetProfileCreationActivity.this, MainActivity.class);
+                        intent.putExtra("fragment_to_load", "profile");
+                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                         startActivity(intent);
                         finish();
                     }))
