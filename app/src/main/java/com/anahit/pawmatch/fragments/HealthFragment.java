@@ -93,7 +93,7 @@ public class HealthFragment extends Fragment {
     }
 
     public void onViewMedicalHistoryClick(Pet pet) {
-        MedicalHistoryDialogFragment dialog = MedicalHealthDialogFragment.newInstance(pet);
+        MedicalHistoryDialogFragment dialog = MedicalHistoryDialogFragment.newInstance(pet);
         dialog.show(getChildFragmentManager(), "MedicalHistoryDialog");
     }
 

@@ -65,6 +65,16 @@
             android:textColor="@color/grey"
             android:paddingBottom="8dp" />
 
+        <!-- Vet Appointment Notes -->
+        <TextView
+            android:id="@+id/vetNotesTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vet Appointments: No appointments recorded."
+            android:textSize="14sp"
+            android:textColor="@color/grey"
+            android:paddingBottom="8dp" />
+
         <!-- Expandable Section Buttons -->
         <Button
             android:id="@+id/viewVaccinationsButton"

@@ -1,9 +1,10 @@
 package com.anahit.pawmatch.models;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Pet {
+public class Pet implements Serializable {
     private String id;
     private String name;
     private String ownerId;
@@ -37,7 +38,7 @@ public class Pet {
         this.vetAppointments = new HashMap<>();
     }
 
-    // New constructor to accept name, age, ownerId, and imageUrl
+    // Constructor to accept name, age, ownerId, and imageUrl
     public Pet(String name, int age, String ownerId, String imageUrl) {
         this.id = null;
         this.name = name;
@@ -86,7 +87,7 @@ public class Pet {
     public void setVetAppointments(Map<String, VetAppointment> vetAppointments) { this.vetAppointments = vetAppointments; }
 
     // Inner classes for nested objects
-    public static class Vaccination {
+    public static class Vaccination implements Serializable {
         private String date;
         private String type;
         private boolean isUpcoming;
@@ -109,7 +110,7 @@ public class Pet {
         public void setReminderTimestamp(long reminderTimestamp) { this.reminderTimestamp = reminderTimestamp; }
     }
 
-    public static class Medication {
+    public static class Medication implements Serializable {
         private String dosage;
         private String frequency;
         private long reminderTimestamp;
@@ -128,7 +129,7 @@ public class Pet {
         public void setReminderTimestamp(long reminderTimestamp) { this.reminderTimestamp = reminderTimestamp; }
     }
 
-    public static class VetAppointment {
+    public static class VetAppointment implements Serializable {
         private String date;
         private String time;
         private String location;

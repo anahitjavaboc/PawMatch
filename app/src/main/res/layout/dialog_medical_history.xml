@@ -1,15 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="16dp">
 
     <TextView
-        android:id="@+id/medicalHistoryTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Medical History"
-        android:textSize="16sp"
-        android:padding="8dp" />
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:paddingBottom="8dp" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="300dp">
+
+        <TextView
+            android:id="@+id/medicalHistoryTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No medical history available."
+            android:textSize="16sp" />
+    </ScrollView>
 </LinearLayout>

@@ -33,18 +33,18 @@ public class MedicationDialogFragment extends DialogFragment {
         View view = inflater.inflate(R.layout.dialog_medication, null);
 
         TextView medicationTextView = view.findViewById(R.id.medicationTextView);
-        if (pet != null && pet.getMedications() != null) {
-            StringBuilder meds = new StringBuilder();
+        if (pet != null && pet.getMedications() != null && !pet.getMedications().isEmpty()) {
+            StringBuilder medications = new StringBuilder();
             for (Map.Entry<String, Pet.Medication> entry : pet.getMedications().entrySet()) {
                 Pet.Medication med = entry.getValue();
-                meds.append("Name: ").append(entry.getKey())
-                        .append(", Dosage: ").append(med.getDosage())
-                        .append(", Frequency: ").append(med.getFrequency())
-                        .append("\n");
+                medications.append("Medication: ").append(entry.getKey())
+                        .append("\nDosage: ").append(med.getDosage())
+                        .append("\nFrequency: ").append(med.getFrequency())
+                        .append("\n\n");
             }
-            medicationTextView.setText(meds.toString().isEmpty() ? "No medications" : meds.toString());
+            medicationTextView.setText(medications.toString());
         } else {
-            medicationTextView.setText("No medications");
+            medicationTextView.setText("No medications recorded.");
         }
 
         builder.setView(view)

@@ -33,14 +33,14 @@ public class MedicalHistoryDialogFragment extends DialogFragment {
         View view = inflater.inflate(R.layout.dialog_medical_history, null);
 
         TextView medicalHistoryTextView = view.findViewById(R.id.medicalHistoryTextView);
-        if (pet != null && pet.getMedicalHistory() != null) {
+        if (pet != null && pet.getMedicalHistory() != null && !pet.getMedicalHistory().isEmpty()) {
             StringBuilder history = new StringBuilder();
             for (Map.Entry<String, String> entry : pet.getMedicalHistory().entrySet()) {
                 history.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
             }
-            medicalHistoryTextView.setText(history.toString().isEmpty() ? "No medical history" : history.toString());
+            medicalHistoryTextView.setText(history.toString());
         } else {
-            medicalHistoryTextView.setText("No medical history");
+            medicalHistoryTextView.setText("No medical history available.");
         }
 
         builder.setView(view)
