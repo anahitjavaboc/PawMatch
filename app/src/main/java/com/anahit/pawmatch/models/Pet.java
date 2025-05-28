@@ -32,10 +32,7 @@ public class Pet implements Serializable {
         this.bio = "No bio available";
         this.ownerName = null;
         this.species = null;
-        this.vaccinationRecords = new HashMap<>();
-        this.medicalHistory = new HashMap<>();
-        this.medications = new HashMap<>();
-        this.vetAppointments = new HashMap<>();
+        initializeHealthRecords();
     }
 
     // Constructor to accept name, age, ownerId, and imageUrl
@@ -50,10 +47,14 @@ public class Pet implements Serializable {
         this.bio = "No bio available";
         this.ownerName = null;
         this.species = null;
-        this.vaccinationRecords = new HashMap<>();
-        this.medicalHistory = new HashMap<>();
-        this.medications = new HashMap<>();
-        this.vetAppointments = new HashMap<>();
+        initializeHealthRecords();
+    }
+
+    private void initializeHealthRecords() {
+        if (vaccinationRecords == null) vaccinationRecords = new HashMap<>();
+        if (medicalHistory == null) medicalHistory = new HashMap<>();
+        if (medications == null) medications = new HashMap<>();
+        if (vetAppointments == null) vetAppointments = new HashMap<>();
     }
 
     // Getters and setters
@@ -78,13 +79,25 @@ public class Pet implements Serializable {
     public String getSpecies() { return species; }
     public void setSpecies(String species) { this.species = species; }
     public Map<String, Vaccination> getVaccinationRecords() { return vaccinationRecords; }
-    public void setVaccinationRecords(Map<String, Vaccination> vaccinationRecords) { this.vaccinationRecords = vaccinationRecords; }
+    public void setVaccinationRecords(Map<String, Vaccination> vaccinationRecords) {
+        this.vaccinationRecords = vaccinationRecords;
+        initializeHealthRecords(); // Ensure initialization if null
+    }
     public Map<String, String> getMedicalHistory() { return medicalHistory; }
-    public void setMedicalHistory(Map<String, String> medicalHistory) { this.medicalHistory = medicalHistory; }
+    public void setMedicalHistory(Map<String, String> medicalHistory) {
+        this.medicalHistory = medicalHistory;
+        initializeHealthRecords(); // Ensure initialization if null
+    }
     public Map<String, Medication> getMedications() { return medications; }
-    public void setMedications(Map<String, Medication> medications) { this.medications = medications; }
+    public void setMedications(Map<String, Medication> medications) {
+        this.medications = medications;
+        initializeHealthRecords(); // Ensure initialization if null
+    }
     public Map<String, VetAppointment> getVetAppointments() { return vetAppointments; }
-    public void setVetAppointments(Map<String, VetAppointment> vetAppointments) { this.vetAppointments = vetAppointments; }
+    public void setVetAppointments(Map<String, VetAppointment> vetAppointments) {
+        this.vetAppointments = vetAppointments;
+        initializeHealthRecords(); // Ensure initialization if null
+    }
 
     // Inner classes for nested objects
     public static class Vaccination implements Serializable {
@@ -114,12 +127,14 @@ public class Pet implements Serializable {
         private String dosage;
         private String frequency;
         private long reminderTimestamp;
+        private boolean bought;
 
         public Medication() {}
-        public Medication(String dosage, String frequency, long reminderTimestamp) {
+        public Medication(String dosage, String frequency, long reminderTimestamp, boolean bought) {
             this.dosage = dosage;
             this.frequency = frequency;
             this.reminderTimestamp = reminderTimestamp;
+            this.bought = bought;
         }
         public String getDosage() { return dosage; }
         public void setDosage(String dosage) { this.dosage = dosage; }
@@ -127,6 +142,8 @@ public class Pet implements Serializable {
         public void setFrequency(String frequency) { this.frequency = frequency; }
         public long getReminderTimestamp() { return reminderTimestamp; }
         public void setReminderTimestamp(long reminderTimestamp) { this.reminderTimestamp = reminderTimestamp; }
+        public boolean isBought() { return bought; }
+        public void setBought(boolean bought) { this.bought = bought; }
     }
 
     public static class VetAppointment implements Serializable {

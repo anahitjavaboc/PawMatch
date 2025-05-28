@@ -61,7 +61,7 @@ public class HealthFragment extends Fragment {
     }
 
     private void loadPets() {
-        petsRef.addValueEventListener(new ValueEventListener() {
+        petsRef.orderByChild("ownerId").equalTo(currentUserId).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 pets.clear();
@@ -85,6 +85,15 @@ public class HealthFragment extends Fragment {
                 Toast.makeText(requireContext(), "Failed to load pet data", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    public void refreshData() {
+        if (currentUserId == null) {
+            Log.e("HealthFragment", "Cannot refresh data: Current user ID is null");
+            return;
+        }
+        Log.d("HealthFragment", "Refreshing pet data");
+        loadPets(); // Re-fetch pet data
     }
 
     public void onViewVaccinationsClick(Pet pet) {

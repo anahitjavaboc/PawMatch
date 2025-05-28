@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -22,6 +23,7 @@ import com.anahit.pawmatch.fragments.HealthFragment;
 import com.anahit.pawmatch.fragments.MatchesFragment;
 import com.anahit.pawmatch.fragments.ProfileFragment;
 import com.anahit.pawmatch.models.Pet;
+import com.anahit.pawmatch.NotificationHelper;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -81,7 +83,10 @@ public class MainActivity extends AppCompatActivity {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_CODE);
             } else {
                 Log.d(TAG, "Notification permission already granted");
+                scheduleVetAppointmentNotifications();
             }
+        } else {
+            scheduleVetAppointmentNotifications();
         }
     }
 
@@ -91,7 +96,6 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == NOTIFICATION_PERMISSION_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "Notification permission granted");
-                // Now that permission is granted, schedule notifications
                 scheduleVetAppointmentNotifications();
             } else {
                 Log.w(TAG, "Notification permission denied");
@@ -162,7 +166,15 @@ public class MainActivity extends AppCompatActivity {
     private void scheduleVetAppointmentNotifications() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "Cannot schedule notifications without permission");
+            Log.w(TAG, "Cannot schedule notifications without POST_NOTIFICATIONS permission");
+            return;
+        }
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+            Log.w(TAG, "Cannot schedule exact alarms: Permission denied");
+            Toast.makeText(this, "Please enable exact alarm permission in settings to receive reminders.", Toast.LENGTH_LONG).show();
+            startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM));
             return;
         }
 
@@ -170,7 +182,6 @@ public class MainActivity extends AppCompatActivity {
             petsRef.orderByChild("ownerId").equalTo(userId).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
-                    AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
                     int scheduledCount = 0;
                     for (DataSnapshot petSnapshot : snapshot.getChildren()) {
                         Pet pet = petSnapshot.getValue(Pet.class);
@@ -181,10 +192,10 @@ public class MainActivity extends AppCompatActivity {
                                 long reminderTimestamp = appt.getReminderTimestamp();
 
                                 if (reminderTimestamp > System.currentTimeMillis()) {
-                                    Intent intent = new Intent(MainActivity.this, ReminderReceiver.class);
-                                    intent.putExtra("pet_name", pet.getName());
-                                    intent.putExtra("appt_date", appt.getDate());
-                                    intent.putExtra("appt_key", apptKey);
+                                    Intent intent = new Intent(MainActivity.this, NotificationReceiver.class); // Changed to NotificationReceiver
+                                    intent.putExtra("petName", pet.getName());
+                                    intent.putExtra("location", appt.getLocation());
+                                    intent.putExtra("apptKey", apptKey);
 
                                     PendingIntent pendingIntent = PendingIntent.getBroadcast(
                                             MainActivity.this,
@@ -237,12 +248,10 @@ public class MainActivity extends AppCompatActivity {
             public void onPageSelected(int position) {
                 Log.d(TAG, "ViewPager switched to position: " + position);
                 updateButtonState(position);
-                // Refresh ProfileFragment if it's selected
-                if (position == 3) {
-                    Fragment fragment = getSupportFragmentManager()
-                            .findFragmentByTag("f" + viewPager.getCurrentItem());
-                    if (fragment instanceof ProfileFragment) {
-                        ((ProfileFragment) fragment).refreshProfile();
+                if (position == 2) { // HealthFragment
+                    Fragment fragment = getSupportFragmentManager().findFragmentByTag("f" + viewPager.getCurrentItem());
+                    if (fragment instanceof HealthFragment) {
+                        ((HealthFragment) fragment).refreshData();
                     }
                 }
             }

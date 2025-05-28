@@ -2,6 +2,7 @@ package com.anahit.pawmatch;
 
 import android.app.Application;
 import android.util.Log;
+import com.anahit.pawmatch.NotificationHelper;
 import com.cloudinary.android.MediaManager;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,5 +33,8 @@ public class PawMatchApplication extends Application {
         } catch (Exception e) {
             Log.e(TAG, "Cloudinary initialization failed: " + e.getMessage(), e);
         }
+
+        // Create notification channel on app startup
+        NotificationHelper.createNotificationChannel(this);
     }
 }

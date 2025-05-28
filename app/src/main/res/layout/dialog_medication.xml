@@ -11,19 +11,71 @@
         android:layout_height="wrap_content"
         android:text="Medications"
         android:textSize="18sp"
+        android:textColor="@color/black"
         android:textStyle="bold"
         android:paddingBottom="8dp" />
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxHeight="300dp">
+        android:maxHeight="200dp">
 
-        <TextView
-            android:id="@+id/medicationTextView"
+        <LinearLayout
+            android:id="@+id/medicationList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="No medications recorded."
-            android:textSize="16sp" />
+            android:orientation="vertical" />
     </ScrollView>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add New Medication"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:paddingTop="16dp"
+        android:paddingBottom="8dp" />
+
+    <EditText
+        android:id="@+id/nameEditText"
+        android:layout_width="match_parent"
+        android:layout_height="49dp"
+        android:hint="Medication Name"
+        android:inputType="text"
+        android:padding="8dp" />
+
+    <EditText
+        android:id="@+id/dosageEditText"
+        android:layout_width="match_parent"
+        android:layout_height="49dp"
+        android:hint="Dosage (e.g., 1 pill)"
+        android:inputType="text"
+        android:padding="8dp" />
+
+    <EditText
+        android:id="@+id/frequencyEditText"
+        android:layout_width="match_parent"
+        android:layout_height="49dp"
+        android:hint="Frequency (e.g., Daily)"
+        android:inputType="text"
+        android:padding="8dp" />
+
+    <CheckBox
+        android:id="@+id/toBuyCheckBox"
+        android:layout_width="wrap_content"
+        android:layout_height="49dp"
+        android:text="To Buy?"
+        android:padding="8dp" />
+
+    <Button
+        android:id="@+id/addButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add"
+        android:layout_gravity="end"
+        android:padding="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/rounded_button_background"
+        android:backgroundTint="@color/splash_background"/>
 </LinearLayout>
